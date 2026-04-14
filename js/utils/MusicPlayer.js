@@ -72,8 +72,10 @@ FloQuest.MusicPlayer = (function() {
             var midi = synth.noteToMidi(parsed.note);
             var freq = synth.midiToFreq(midi);
             var dur = parsed.steps * spb * 0.9; // slightly shorter than full step for separation
-            var vol = (track.volume !== undefined ? track.volume : 0.5) * volume;
             var preset = synth.getPreset(track.preset || 'organ');
+            var vol = (track.volume !== undefined ? track.volume : 0.5) * volume;
+            // Boost percussioni — il synth le genera più piano dei toni melodici
+            if (preset.percType) vol *= 2.5;
 
             synth.playNote(freq, preset, time, dur, vol);
         }

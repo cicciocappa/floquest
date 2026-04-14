@@ -153,27 +153,12 @@ FloQuest.LevelBackground = {
             }
 
             if (el.tile) {
-                var srcTex = scene.textures.get(imgKey);
-                var srcW = srcTex.source[0].width;
-                var srcH = srcTex.source[0].height;
-
-                for (var ty = el.y; ty < el.y + el.h; ty += srcH) {
-                    for (var tx = el.x; tx < el.x + el.w; tx += srcW) {
-                        var cw = Math.min(srcW, el.x + el.w - tx);
-                        var ch = Math.min(srcH, el.y + el.h - ty);
-
-                        var img = scene.add.image(tx, ty, imgKey)
-                            .setOrigin(0, 0)
-                            .setDepth(el.layer || 0);
-                        applyTint(img, el);
-
-                        if (cw < srcW || ch < srcH) {
-                            img.setCrop(0, 0, cw, ch);
-                        }
-
-                        created.sprites.push(img);
-                    }
-                }
+                // Phaser 4: TileSprite nativo con UV wrapping — un solo oggetto
+                var ts = scene.add.tileSprite(el.x, el.y, el.w, el.h, imgKey)
+                    .setOrigin(0, 0)
+                    .setDepth(el.layer || 0);
+                applyTint(ts, el);
+                created.sprites.push(ts);
             } else {
                 var sprite = scene.add.image(el.x, el.y, imgKey)
                     .setOrigin(0, 0)
