@@ -1,0 +1,1196 @@
+[
+    {
+        "id": 1,
+        "name": "La Spedizione Archeologica",
+        "description": "Templi perduti, rovine e misteri antichi",
+        "intro": "Stavi rovistando in soffitta fra le vecchie cose di famiglia quando il tuo sguardo è caduto su uno scrigno polveroso. Lo hai aperto ed hai trovato un diario ingiallito e una mappa piegata in quattro. La mappa indica la posizione di un tempio perduto nel deserto e nel diario, scritto dal tuo prozio esploratore, ci sono promesse di tesori inestimabili e antiche conoscenze dimenticate...",
+        "icon": "compass",
+        "levels": [
+            {
+                "id": 1,
+                "name": "Il Tempio Perduto",
+                "narration": "La mappa ti ha condotto in questo tempio perduto nelle profondità del deserto. Ti trovi in una grande sala buia, con statue alle pareti fiocamente illuminate dal fuoco dei bracieri. All'ingresso trovi una pergamena con 10 domande che ti indicheranno la strada per arrivare indenne all'uscita.",
+                "environment": "temple",
+                "trap": "darts",
+                "trapName": "Dardi avvelenati",
+                "trapAnim": "death",
+                "theme": "Geografia italiana",
+                "colors": {
+                    "bg": "0x2d1b0e",
+                    "wall": "0x8b7355",
+                    "accent": "0xdaa520",
+                    "floor": "0x3d2b1f",
+                    "primary": "0xdaa520",
+                    "secondary": "0xc2a765"
+                },
+                "ambientParticles": "fire"
+            },
+            {
+                "id": 2,
+                "name": "La Caverna dei Cristalli",
+                "narration": "Scendi nel cuore della montagna attraverso un passaggio stretto. La caverna si apre davanti a te, immensa, punteggiata di cristalli luminescenti che proiettano riflessi viola e azzurri sulle pareti umide. Il sentiero si divide in quattro corridoi: solo uno ti porterà oltre.",
+                "environment": "cave",
+                "trap": "stalactites",
+                "trapName": "Stalattiti cadenti",
+                "trapAnim": "death",
+                "theme": "Scienze naturali",
+                "colors": {
+                    "bg": "0x1a0a2e",
+                    "wall": "0x4a3b6e",
+                    "accent": "0x9b59b6",
+                    "floor": "0x2c1f4a",
+                    "primary": "0x9b59b6",
+                    "secondary": "0xa281b0"
+                },
+                "ambientParticles": "sparkle"
+            },
+            {
+                "id": 3,
+                "name": "La Giungla Maledetta",
+                "narration": "La vegetazione si fa sempre più fitta e intricata. Liane e rami si chiudono sopra di te come dita scheletriche. Gli antichi raccontano di una maledizione che trasforma in sabbia chiunque scelga il sentiero sbagliato. Dovrai rispondere con saggezza per attraversare indenne questa giungla.",
+                "environment": "jungle",
+                "trap": "quicksand",
+                "trapName": "Sabbie mobili",
+                "trapAnim": "falling",
+                "theme": "Storia antica",
+                "colors": {
+                    "bg": "0x0a2e0a",
+                    "wall": "0x2d5a27",
+                    "accent": "0x27ae60",
+                    "floor": "0x1a3a1a",
+                    "primary": "0x27ae60",
+                    "secondary": "0x68ac85"
+                },
+                "ambientParticles": "leaves"
+            },
+            {
+                "id": 4,
+                "name": "Il Ponte sul Vulcano",
+                "narration": "Il calore è quasi insopportabile. Un ponte di pietra attraversa la caldera del vulcano, sospeso sopra fiumi di lava incandescente. Ad ogni bivio, una risposta sbagliata farà eruttare la lava sotto i tuoi piedi. Procedi con cautela.",
+                "environment": "volcano",
+                "trap": "lava",
+                "trapName": "Eruzione di lava",
+                "trapAnim": "falling",
+                "theme": "Letteratura italiana",
+                "colors": {
+                    "bg": "0x1a0500",
+                    "wall": "0x4a1a0a",
+                    "accent": "0xe74c3c",
+                    "floor": "0x2d0a00",
+                    "primary": "0xe74c3c",
+                    "secondary": "0xc87b73"
+                },
+                "ambientParticles": "ember"
+            },
+            {
+                "id": 5,
+                "name": "La Biblioteca Proibita",
+                "narration": "Scaffali infiniti si ergono fino al soffitto, carichi di volumi polverosi e rotoli dimenticati. Questa biblioteca custodisce il sapere di secoli, ma i suoi guardiani la proteggono con trappole mortali. Gli scaffali crollano su chi non dimostra la propria conoscenza.",
+                "environment": "library",
+                "trap": "shelves",
+                "trapName": "Scaffali che crollano",
+                "trapAnim": "death",
+                "theme": "Arte e architettura",
+                "colors": {
+                    "bg": "0x1a140e",
+                    "wall": "0x5a4a3a",
+                    "accent": "0xd4a574",
+                    "floor": "0x2d2418",
+                    "primary": "0xd4a574",
+                    "secondary": "0xbfa78f"
+                },
+                "ambientParticles": "dust"
+            },
+            {
+                "id": 6,
+                "name": "Il Labirinto di Ghiaccio",
+                "narration": "Il gelo ti morde la pelle. Le pareti del labirinto brillano come specchi, riflettendo la luce in mille direzioni. Il freddo è il tuo peggior nemico: una risposta sbagliata e il ghiaccio ti intrappolerà per sempre. Segui la strada giusta per trovare l'uscita.",
+                "environment": "ice",
+                "trap": "freeze",
+                "trapName": "Gelo istantaneo",
+                "trapAnim": "death",
+                "theme": "Musica e cinema",
+                "colors": {
+                    "bg": "0x0a1a2e",
+                    "wall": "0x5a8aae",
+                    "accent": "0x74c0fc",
+                    "floor": "0x1a2a3e",
+                    "primary": "0x74c0fc",
+                    "secondary": "0x8fb5d3"
+                },
+                "ambientParticles": "snow"
+            },
+            {
+                "id": 7,
+                "name": "Le Catacombe Egizie",
+                "narration": "Geroglifici misteriosi adornano le pareti di queste catacombe millenarie. L'aria è secca e carica di polvere. Le mummie dei faraoni riposano nelle loro tombe, pronte a punire chi osa disturbarle senza possedere la conoscenza necessaria per proseguire.",
+                "environment": "catacombs",
+                "trap": "mummy",
+                "trapName": "Bende di mummia",
+                "trapAnim": "death",
+                "theme": "Storia medievale e moderna",
+                "colors": {
+                    "bg": "0x2e1f0a",
+                    "wall": "0xc4a35a",
+                    "accent": "0xf1c40f",
+                    "floor": "0x3d2b10",
+                    "primary": "0xf1c40f",
+                    "secondary": "0xcdb75c"
+                },
+                "ambientParticles": "dust"
+            },
+            {
+                "id": 8,
+                "name": "La Nave Fantasma",
+                "narration": "Una nave spettrale emerge dalla nebbia, con le vele a brandelli e lo scafo incrostato di alghe e conchiglie. Sul ponte, una bussola rotta indica quattro direzioni. Solo la conoscenza dei miti antichi ti guiderà attraverso le acque infestate dal Kraken.",
+                "environment": "ship",
+                "trap": "kraken",
+                "trapName": "Tentacoli di Kraken",
+                "trapAnim": "falling",
+                "theme": "Mitologia e leggende",
+                "colors": {
+                    "bg": "0x0a0a2e",
+                    "wall": "0x2a3a5a",
+                    "accent": "0x1abc9c",
+                    "floor": "0x1a1a3e",
+                    "primary": "0x1abc9c",
+                    "secondary": "0x62b3a3"
+                },
+                "ambientParticles": "rain"
+            },
+            {
+                "id": 9,
+                "name": "La Torre dell'Alchimista",
+                "narration": "Pozioni ribollono in alambicchi di rame, fumi colorati salgono verso il soffitto. La torre dell'alchimista è un labirinto di scale a chiocciola e stanze segrete. Ogni errore farà esplodere una delle instabili miscele che ingombrano i passaggi.",
+                "environment": "tower",
+                "trap": "explosion",
+                "trapName": "Pozione esplosiva",
+                "trapAnim": "death",
+                "theme": "Scienza e invenzioni",
+                "colors": {
+                    "bg": "0x1a0e2e",
+                    "wall": "0x4a3a6e",
+                    "accent": "0xe67e22",
+                    "floor": "0x2a1e3e",
+                    "primary": "0xe67e22",
+                    "secondary": "0xc89466"
+                },
+                "ambientParticles": "bubble"
+            },
+            {
+                "id": 10,
+                "name": "La Camera del Tesoro",
+                "narration": "Ci sei quasi. La Camera del Tesoro si apre davanti a te, scintillante d'oro e gemme. Ma il pavimento è fragile, costruito su una rete di meccanismi antichi. Un passo falso e tutto crollerà sotto i tuoi piedi. Questa è l'ultima prova: dimostra tutto ciò che hai imparato.",
+                "environment": "treasure",
+                "trap": "collapse",
+                "trapName": "Pavimento che crolla",
+                "trapAnim": "falling",
+                "theme": "Mix finale",
+                "colors": {
+                    "bg": "0x2e2a0a",
+                    "wall": "0xc9a84c",
+                    "accent": "0xf39c12",
+                    "floor": "0x3d3510",
+                    "primary": "0xf39c12",
+                    "secondary": "0xcea35e"
+                },
+                "ambientParticles": "sparkle"
+            }
+        ]
+    },
+    {
+        "id": 2,
+        "name": "I Sentieri Selvaggi",
+        "description": "Sopravvivenza nella natura tra foreste, paludi e montagne",
+        "intro": "Una lettera misteriosa è arrivata stamattina: il tuo vecchio maestro di scienze, scomparso anni fa durante una spedizione, è stato avvistato oltre le montagne. Hai preparato lo zaino e sei partita all'alba. Il sentiero si è fatto subito impervio, la foresta sempre più fitta. Non sai ancora che la natura selvaggia ti metterà alla prova ad ogni passo...",
+        "icon": "tree",
+        "levels": [
+            {
+                "id": 1,
+                "name": "La Foresta dei Lupi",
+                "narration": "Ti addentri in una foresta oscura dove il branco ulula in lontananza. Gli alberi sono così fitti che la luce filtra appena. Ad ogni bivio, i lupi si avvicinano: solo la conoscenza ti terrà al sicuro.",
+                "environment": "forest",
+                "trap": "wolves",
+                "trapName": "Branco di lupi",
+                "trapAnim": "death",
+                "theme": "Flora e fauna",
+                "colors": {
+                    "bg": "0x1a2e1a",
+                    "wall": "0x3a5a2a",
+                    "accent": "0x4a8a3a",
+                    "floor": "0x2a3a1a",
+                    "primary": "0x4a8a3a",
+                    "secondary": "0x7a9a72"
+                },
+                "ambientParticles": "leaves"
+            },
+            {
+                "id": 2,
+                "name": "La Palude Nera",
+                "narration": "L'aria è densa e umida. Bolle di gas salgono dalla superficie scura dell'acqua stagnante. La palude nasconde creature che aspettano solo un passo falso per trascinarti nel fango.",
+                "environment": "swamp",
+                "trap": "leeches",
+                "trapName": "Sanguisughe giganti",
+                "trapAnim": "death",
+                "theme": "Ecologia e ambiente",
+                "colors": {
+                    "bg": "0x1a2a1a",
+                    "wall": "0x3a4a2a",
+                    "accent": "0x6a8a4a",
+                    "floor": "0x2a3a2a",
+                    "primary": "0x6a8a4a",
+                    "secondary": "0x8a9a7a"
+                },
+                "ambientParticles": "bubble"
+            },
+            {
+                "id": 3,
+                "name": "Il Lago Ghiacciato",
+                "narration": "Il ghiaccio scricchiola sotto i tuoi piedi. La superficie del lago è un mosaico di lastre instabili. Un passo sbagliato e il ghiaccio cederà, inghiottendoti nelle acque gelide sottostanti.",
+                "environment": "frozen_lake",
+                "trap": "cracking_ice",
+                "trapName": "Ghiaccio che cede",
+                "trapAnim": "falling",
+                "theme": "Clima e meteorologia",
+                "colors": {
+                    "bg": "0x1a2a3e",
+                    "wall": "0x5a8aae",
+                    "accent": "0x8abace",
+                    "floor": "0x2a3a4e",
+                    "primary": "0x8abace",
+                    "secondary": "0x9ab2bc"
+                },
+                "ambientParticles": "snow"
+            },
+            {
+                "id": 4,
+                "name": "Il Deserto di Sale",
+                "narration": "Una distesa bianca e abbagliante si estende all'orizzonte. Il sale cristallizzato scricchiola sotto i piedi. Dal terreno arido emergono scorpioni che proteggono i sentieri dimenticati.",
+                "environment": "salt_desert",
+                "trap": "scorpions",
+                "trapName": "Scorpioni velenosi",
+                "trapAnim": "death",
+                "theme": "Deserti e civiltà perdute",
+                "colors": {
+                    "bg": "0x3e3a2a",
+                    "wall": "0xdadaca",
+                    "accent": "0xeae8d0",
+                    "floor": "0x4e4a3a",
+                    "primary": "0xeae8d0",
+                    "secondary": "0xcac9bd"
+                },
+                "ambientParticles": "dust"
+            },
+            {
+                "id": 5,
+                "name": "La Gola del Fiume",
+                "narration": "Le pareti del canyon si ergono vertiginose ai tuoi lati. Il torrente in basso ruggisce con furia. Una piena improvvisa potrebbe travolgerti se scegli il sentiero sbagliato lungo questa gola profonda.",
+                "environment": "canyon",
+                "trap": "flash_flood",
+                "trapName": "Piena improvvisa",
+                "trapAnim": "falling",
+                "theme": "Geologia e minerali",
+                "colors": {
+                    "bg": "0x2e1a0a",
+                    "wall": "0x8a5a3a",
+                    "accent": "0xba7a4a",
+                    "floor": "0x3e2a1a",
+                    "primary": "0xba7a4a",
+                    "secondary": "0xb2927a"
+                },
+                "ambientParticles": "dust"
+            },
+            {
+                "id": 6,
+                "name": "Il Nido delle Aquile",
+                "narration": "La parete rocciosa è quasi verticale. Il vento soffia forte e i massi sopra di te sembrano pronti a precipitare. Le aquile volteggiano in alto, guardiane di questo passo montano.",
+                "environment": "cliff",
+                "trap": "rockfall",
+                "trapName": "Frana di massi",
+                "trapAnim": "death",
+                "theme": "Uccelli e migrazione",
+                "colors": {
+                    "bg": "0x2a2a3a",
+                    "wall": "0x6a6a7a",
+                    "accent": "0x8a8a9a",
+                    "floor": "0x3a3a4a",
+                    "primary": "0x8a8a9a",
+                    "secondary": "0x9a9aa2"
+                },
+                "ambientParticles": "dust"
+            },
+            {
+                "id": 7,
+                "name": "La Tana dei Serpenti",
+                "narration": "Un sibilo costante riempie l'aria. Il terreno è coperto di squame e il calore è soffocante. I serpenti velenosi si annidano in ogni angolo, pronti a colpire chi non conosce la via sicura.",
+                "environment": "snake_den",
+                "trap": "venom",
+                "trapName": "Serpenti velenosi",
+                "trapAnim": "death",
+                "theme": "Rettili e anfibi",
+                "colors": {
+                    "bg": "0x2e2a0a",
+                    "wall": "0x5a4a1a",
+                    "accent": "0x8a7a2a",
+                    "floor": "0x3e3a1a",
+                    "primary": "0x8a7a2a",
+                    "secondary": "0x9a926a"
+                },
+                "ambientParticles": "dust"
+            },
+            {
+                "id": 8,
+                "name": "La Foresta di Bambù",
+                "narration": "Fusti altissimi di bambù si piegano al vento creando un labirinto verde e sonoro. Tra le ombre si muove qualcosa di grande e silenzioso: la tigre è in agguato, e solo la saggezza ti permetterà di passare.",
+                "environment": "bamboo",
+                "trap": "tiger",
+                "trapName": "Tigre in agguato",
+                "trapAnim": "death",
+                "theme": "Asia: geografia e cultura",
+                "colors": {
+                    "bg": "0x0a2e0a",
+                    "wall": "0x3a7a2a",
+                    "accent": "0x5aaa3a",
+                    "floor": "0x1a3e1a",
+                    "primary": "0x5aaa3a",
+                    "secondary": "0x82aa72"
+                },
+                "ambientParticles": "leaves"
+            },
+            {
+                "id": 9,
+                "name": "Le Mangrovie Sommerse",
+                "narration": "Le radici delle mangrovie si intrecciano sopra l'acqua torbida come dita scheletriche. L'acqua arriva alla vita e qualcosa di grosso si muove appena sotto la superficie. Il coccodrillo aspetta paziente.",
+                "environment": "mangrove",
+                "trap": "crocodile",
+                "trapName": "Coccodrillo",
+                "trapAnim": "falling",
+                "theme": "Oceani e mari",
+                "colors": {
+                    "bg": "0x1a2a1a",
+                    "wall": "0x4a6a3a",
+                    "accent": "0x3a8a5a",
+                    "floor": "0x2a3a2a",
+                    "primary": "0x3a8a5a",
+                    "secondary": "0x729a82"
+                },
+                "ambientParticles": "bubble"
+            },
+            {
+                "id": 10,
+                "name": "La Vetta della Tempesta",
+                "narration": "La cima è vicina ma il cielo è nero di nubi. I fulmini colpiscono la roccia intorno a te, illuminando la via per un istante. L'ultima sfida della natura ti attende sulla vetta battuta dalla tempesta.",
+                "environment": "summit",
+                "trap": "lightning",
+                "trapName": "Fulmine",
+                "trapAnim": "death",
+                "theme": "Montagne e vulcani",
+                "colors": {
+                    "bg": "0x1a1a2e",
+                    "wall": "0x4a4a5e",
+                    "accent": "0xffee44",
+                    "floor": "0x2a2a3e",
+                    "primary": "0xffee44",
+                    "secondary": "0xd4cc77"
+                },
+                "ambientParticles": "rain"
+            }
+        ]
+    },
+    {
+        "id": 3,
+        "name": "I Segreti del Castello",
+        "description": "Sale, sotterranei, torri e passaggi segreti medievali",
+        "intro": "Durante una gita scolastica al castello di Roccamandolfi, ti sei allontanata dal gruppo per esplorare una torre chiusa al pubblico. La porta si è richiusa alle tue spalle con un tonfo sordo. Ora sei intrappolata in un dedalo di sale, sotterranei e passaggi segreti. L'unica via d'uscita è attraversare tutte le stanze del castello, superando le prove che i suoi antichi signori hanno lasciato a guardia dei loro segreti...",
+        "icon": "castle",
+        "levels": [
+            {
+                "id": 1,
+                "name": "Il Ponte Levatoio",
+                "narration": "Il ponte levatoio scricchiola sotto i tuoi piedi. Dall'alto delle mura, i difensori del castello sono pronti a versare olio bollente su chiunque non dimostri di essere degno di entrare.",
+                "environment": "drawbridge",
+                "trap": "boiling_oil",
+                "trapName": "Olio bollente",
+                "trapAnim": "death",
+                "theme": "Medioevo e feudalesimo",
+                "colors": {
+                    "bg": "0x2a1a0e",
+                    "wall": "0x6a5a4a",
+                    "accent": "0x9a8a7a",
+                    "floor": "0x3a2a1e",
+                    "primary": "0x9a8a7a",
+                    "secondary": "0xa29a92"
+                },
+                "ambientParticles": "fire"
+            },
+            {
+                "id": 2,
+                "name": "Le Segrete",
+                "narration": "Scendi nelle viscere del castello. Le pareti stillano umidità e catene arrugginite pendono dal soffitto. Le segrete nascondono trappole mortali per chi non possiede la conoscenza per proseguire.",
+                "environment": "dungeon",
+                "trap": "iron_maiden",
+                "trapName": "Vergine di ferro",
+                "trapAnim": "death",
+                "theme": "Torture e giustizia medievale",
+                "colors": {
+                    "bg": "0x1a1a1a",
+                    "wall": "0x3a3a3a",
+                    "accent": "0x8a4a2a",
+                    "floor": "0x2a2a2a",
+                    "primary": "0x8a4a2a",
+                    "secondary": "0x9a7a6a"
+                },
+                "ambientParticles": "dust"
+            },
+            {
+                "id": 3,
+                "name": "La Sala del Trono",
+                "narration": "La sala del trono è immensa, con arazzi che raccontano battaglie antiche. Il pavimento è un mosaico di mattonelle, ma alcune nascondono botole mortali. Solo chi sa può attraversare indenne.",
+                "environment": "throne_room",
+                "trap": "trapdoor",
+                "trapName": "Botola nel pavimento",
+                "trapAnim": "falling",
+                "theme": "Re e regine d'Europa",
+                "colors": {
+                    "bg": "0x2e1a1a",
+                    "wall": "0x8a3a3a",
+                    "accent": "0xca6a2a",
+                    "floor": "0x3e2a2a",
+                    "primary": "0xca6a2a",
+                    "secondary": "0xba8a6a"
+                },
+                "ambientParticles": "dust"
+            },
+            {
+                "id": 4,
+                "name": "La Torre di Guardia",
+                "narration": "Sali la scala a chiocciola della torre di guardia. Dalle feritoie nelle pareti, frecce possono scattare in qualsiasi momento. I guardiani fantasma del castello non perdonano l'ignoranza.",
+                "environment": "watchtower",
+                "trap": "arrows",
+                "trapName": "Pioggia di frecce",
+                "trapAnim": "death",
+                "theme": "Guerre e battaglie famose",
+                "colors": {
+                    "bg": "0x2a2a1e",
+                    "wall": "0x7a7a5a",
+                    "accent": "0xaa9a6a",
+                    "floor": "0x3a3a2e",
+                    "primary": "0xaa9a6a",
+                    "secondary": "0xaaa28a"
+                },
+                "ambientParticles": "dust"
+            },
+            {
+                "id": 5,
+                "name": "La Cucina del Re",
+                "narration": "Enormi calderoni ribollono su fuochi scoppiettanti. L'aroma di spezie esotiche riempie l'aria. Ma la cucina del re nasconde pericoli: un passo falso e finirai nel calderone bollente.",
+                "environment": "kitchen",
+                "trap": "cauldron",
+                "trapName": "Calderone bollente",
+                "trapAnim": "falling",
+                "theme": "Cibo e tradizioni culinarie",
+                "colors": {
+                    "bg": "0x2e1a0a",
+                    "wall": "0x7a4a2a",
+                    "accent": "0xea8a2a",
+                    "floor": "0x3e2a1a",
+                    "primary": "0xea8a2a",
+                    "secondary": "0xca9a6a"
+                },
+                "ambientParticles": "fire"
+            },
+            {
+                "id": 6,
+                "name": "La Cripta dei Cavalieri",
+                "narration": "Le tombe dei cavalieri templari sono allineate lungo le pareti. Le armature vuote sembrano osservarti. Un cavaliere spettrale si aggira nella cripta, pronto a sfidare chi non dimostra valore.",
+                "environment": "crypt",
+                "trap": "ghost_knight",
+                "trapName": "Cavaliere spettrale",
+                "trapAnim": "death",
+                "theme": "Ordini cavallereschi",
+                "colors": {
+                    "bg": "0x1a1a2a",
+                    "wall": "0x4a4a5a",
+                    "accent": "0x7a7aaa",
+                    "floor": "0x2a2a3a",
+                    "primary": "0x7a7aaa",
+                    "secondary": "0x9292aa"
+                },
+                "ambientParticles": "sparkle"
+            },
+            {
+                "id": 7,
+                "name": "Il Giardino Segreto",
+                "narration": "Oltre una porta nascosta, un giardino lussureggiante. Ma le rose hanno spine mortali e i rovi si muovono come serpenti. Questo giardino è bello quanto pericoloso per chi sceglie male.",
+                "environment": "garden",
+                "trap": "thorns",
+                "trapName": "Rovi che intrappolano",
+                "trapAnim": "death",
+                "theme": "Botanica e veleni naturali",
+                "colors": {
+                    "bg": "0x0e2e0e",
+                    "wall": "0x2a6a2a",
+                    "accent": "0xea3a5a",
+                    "floor": "0x1e3e1e",
+                    "primary": "0xea3a5a",
+                    "secondary": "0xca7282"
+                },
+                "ambientParticles": "leaves"
+            },
+            {
+                "id": 8,
+                "name": "La Sala delle Armi",
+                "narration": "Spade, lance, scudi e mazze ferrate adornano ogni parete. L'armeria del castello è un museo di guerra, ma le rastrelliere sono instabili. Un errore e le armi precipiteranno su di te.",
+                "environment": "armory",
+                "trap": "falling_weapons",
+                "trapName": "Armi che cadono",
+                "trapAnim": "death",
+                "theme": "Armi e armature nella storia",
+                "colors": {
+                    "bg": "0x2a2a2a",
+                    "wall": "0x5a5a5a",
+                    "accent": "0xaaaacc",
+                    "floor": "0x3a3a3a",
+                    "primary": "0xaaaacc",
+                    "secondary": "0xaaaabb"
+                },
+                "ambientParticles": "sparkle"
+            },
+            {
+                "id": 9,
+                "name": "Il Passaggio Murato",
+                "narration": "Un passaggio segreto dietro un arazzo conduce nelle viscere del castello. Le pareti sono strette e sembrano chiudersi lentamente. Devi procedere in fretta e con intelligenza per uscirne vivo.",
+                "environment": "hidden_passage",
+                "trap": "walls_closing",
+                "trapName": "Pareti che si stringono",
+                "trapAnim": "death",
+                "theme": "Architettura e castelli famosi",
+                "colors": {
+                    "bg": "0x1a1a1a",
+                    "wall": "0x4a4a4a",
+                    "accent": "0x8a8a6a",
+                    "floor": "0x2a2a2a",
+                    "primary": "0x8a8a6a",
+                    "secondary": "0x9a9a8a"
+                },
+                "ambientParticles": "dust"
+            },
+            {
+                "id": 10,
+                "name": "La Camera del Tesoro Reale",
+                "narration": "L'ultima stanza del castello contiene il tesoro reale. Montagne di monete d'oro e gioielli luccicano alla luce delle torce. Ma la saracinesca è pronta a calare, intrappolando per sempre chi non è degno.",
+                "environment": "royal_vault",
+                "trap": "portcullis",
+                "trapName": "Saracinesca",
+                "trapAnim": "death",
+                "theme": "Tesori e gioielli della corona",
+                "colors": {
+                    "bg": "0x2e2a0a",
+                    "wall": "0xca9a4a",
+                    "accent": "0xfacc2a",
+                    "floor": "0x3e3a1a",
+                    "primary": "0xfacc2a",
+                    "secondary": "0xd2bb6a"
+                },
+                "ambientParticles": "sparkle"
+            }
+        ]
+    },
+    {
+        "id": 4,
+        "name": "Abissi e Profondità",
+        "description": "Esplorazione sottomarina tra relitti, abissi e creature oceaniche",
+        "intro": "Il nonno ti ha lasciato in eredità una vecchia barca e un baule pieno di carte nautiche. Tra le carte hai trovato le coordinate di un porto sommerso che nessuno ha mai ritrovato. Hai noleggiato un sottomarino e ti sei immersa nelle acque scure del Mediterraneo. Là sotto, tra relitti e creature abissali, ti aspetta un viaggio che cambierà per sempre la tua idea degli oceani...",
+        "icon": "anchor",
+        "levels": [
+            {
+                "id": 1,
+                "name": "Il Porto Sommerso",
+                "narration": "Le rovine di un antico porto giacciono sul fondo del mare. Colonne spezzate e anfore sono coperte di alghe. Un'ancora arrugginita pende dall'alto, pronta a trascinarti negli abissi se sbagli strada.",
+                "environment": "sunken_port",
+                "trap": "anchor",
+                "trapName": "Ancora che trascina",
+                "trapAnim": "falling",
+                "theme": "Esplorazioni e navigazione",
+                "colors": {
+                    "bg": "0x0a1a2e",
+                    "wall": "0x2a4a6a",
+                    "accent": "0x4a8aba",
+                    "floor": "0x1a2a3e",
+                    "primary": "0x4a8aba",
+                    "secondary": "0x7a9ab2"
+                },
+                "ambientParticles": "bubble"
+            },
+            {
+                "id": 2,
+                "name": "Il Relitto del Galeone",
+                "narration": "Un galeone spagnolo giace sul fondo, con lo scafo squarciato. I cannoni sono ancora al loro posto, carichi di polvere da sparo che il mare non ha bagnato. Un urto sbagliato e tutto esploderà.",
+                "environment": "galleon_wreck",
+                "trap": "cannon",
+                "trapName": "Cannone che esplode",
+                "trapAnim": "death",
+                "theme": "Pirati e corsari",
+                "colors": {
+                    "bg": "0x0a1a1a",
+                    "wall": "0x3a4a3a",
+                    "accent": "0x8a6a3a",
+                    "floor": "0x1a2a2a",
+                    "primary": "0x8a6a3a",
+                    "secondary": "0x9a8a72"
+                },
+                "ambientParticles": "bubble"
+            },
+            {
+                "id": 3,
+                "name": "La Barriera Corallina",
+                "narration": "Un arcobaleno di coralli ti circonda. Pesci di ogni forma e colore nuotano tra le formazioni. Ma tra i coralli si nascondono meduse urticanti, pronte a colpire chi disturba il loro territorio.",
+                "environment": "coral_reef",
+                "trap": "jellyfish",
+                "trapName": "Meduse urticanti",
+                "trapAnim": "death",
+                "theme": "Vita marina",
+                "colors": {
+                    "bg": "0x0a2a3e",
+                    "wall": "0x2a6a7a",
+                    "accent": "0xea6a8a",
+                    "floor": "0x1a3a4e",
+                    "primary": "0xea6a8a",
+                    "secondary": "0xca8a9a"
+                },
+                "ambientParticles": "bubble"
+            },
+            {
+                "id": 4,
+                "name": "La Grotta Subacquea",
+                "narration": "Un'apertura nella roccia conduce in una grotta sottomarina. Le stalattiti pendono come denti giganti e il fondale è coperto di ricci velenosi. Ogni passo deve essere calcolato con precisione.",
+                "environment": "sea_cave",
+                "trap": "urchins",
+                "trapName": "Ricci velenosi",
+                "trapAnim": "death",
+                "theme": "Grotte e speleologia",
+                "colors": {
+                    "bg": "0x0a0a1e",
+                    "wall": "0x2a2a4a",
+                    "accent": "0x6a4aaa",
+                    "floor": "0x1a1a2e",
+                    "primary": "0x6a4aaa",
+                    "secondary": "0x8a7aaa"
+                },
+                "ambientParticles": "bubble"
+            },
+            {
+                "id": 5,
+                "name": "Il Cimitero delle Navi",
+                "narration": "Decine di relitti giacciono ammassati in questo tratto di fondale. Navi di ogni epoca formano un labirinto spettrale. Tra gli scafi, una nave fantasma sembra ancora navigare, cercando nuove vittime.",
+                "environment": "ship_graveyard",
+                "trap": "ghost_ship",
+                "trapName": "Nave fantasma",
+                "trapAnim": "death",
+                "theme": "Naufragi famosi",
+                "colors": {
+                    "bg": "0x0a0a1a",
+                    "wall": "0x2a3a4a",
+                    "accent": "0x4a7a8a",
+                    "floor": "0x1a1a2a",
+                    "primary": "0x4a7a8a",
+                    "secondary": "0x7a929a"
+                },
+                "ambientParticles": "bubble"
+            },
+            {
+                "id": 6,
+                "name": "La Fossa Abissale",
+                "narration": "La luce scompare man mano che scendi nella fossa. A questa profondità, creature bioluminescenti illuminano il buio con luci ingannevoli. Un pesce abissale gigante ti osserva dal basso.",
+                "environment": "abyss",
+                "trap": "angler_fish",
+                "trapName": "Pesce abissale",
+                "trapAnim": "death",
+                "theme": "Fondo oceanico",
+                "colors": {
+                    "bg": "0x000010",
+                    "wall": "0x0a0a2a",
+                    "accent": "0x2a4aea",
+                    "floor": "0x0a0a1a",
+                    "primary": "0x2a4aea",
+                    "secondary": "0x6a7aca"
+                },
+                "ambientParticles": "sparkle"
+            },
+            {
+                "id": 7,
+                "name": "Il Tempio di Atlantide",
+                "narration": "Colonne di marmo bianco si ergono dal fondale, ricoperte di coralli. Questo è il leggendario tempio di Atlantide. Un vortice si forma davanti a ogni passaggio sbagliato, pronto a risucchiarti.",
+                "environment": "atlantis",
+                "trap": "whirlpool",
+                "trapName": "Vortice",
+                "trapAnim": "falling",
+                "theme": "Civiltà leggendarie",
+                "colors": {
+                    "bg": "0x0a1a3e",
+                    "wall": "0xaaaacc",
+                    "accent": "0x4aeafa",
+                    "floor": "0x1a2a4e",
+                    "primary": "0x4aeafa",
+                    "secondary": "0x7acad2"
+                },
+                "ambientParticles": "sparkle"
+            },
+            {
+                "id": 8,
+                "name": "Il Giardino di Nettuno",
+                "narration": "Un giardino sottomarino di alghe giganti e anemoni luminosi si estende davanti a te. È il dominio di Nettuno, dove anguille elettriche pattugliano i sentieri come guardiani silenziosi.",
+                "environment": "neptune_garden",
+                "trap": "electric_eel",
+                "trapName": "Anguilla elettrica",
+                "trapAnim": "death",
+                "theme": "Mitologia del mare",
+                "colors": {
+                    "bg": "0x0a2a2a",
+                    "wall": "0x2a6a5a",
+                    "accent": "0x4aeaca",
+                    "floor": "0x1a3a3a",
+                    "primary": "0x4aeaca",
+                    "secondary": "0x7acaba"
+                },
+                "ambientParticles": "bubble"
+            },
+            {
+                "id": 9,
+                "name": "La Trincea Vulcanica",
+                "narration": "Il fondale si apre in una spaccatura fumante. Geyser sottomarini eruttano acqua bollente senza preavviso. Il calore è intenso anche attraverso la tuta. Un getto sbagliato e sarai cotto.",
+                "environment": "hydrothermal",
+                "trap": "steam_vent",
+                "trapName": "Geyser sottomarino",
+                "trapAnim": "death",
+                "theme": "Geotermia e vulcanismo",
+                "colors": {
+                    "bg": "0x1a0a0a",
+                    "wall": "0x4a2a1a",
+                    "accent": "0xea6a2a",
+                    "floor": "0x2a1a1a",
+                    "primary": "0xea6a2a",
+                    "secondary": "0xca8a6a"
+                },
+                "ambientParticles": "ember"
+            },
+            {
+                "id": 10,
+                "name": "La Cupola Sommersa",
+                "narration": "Una cupola di vetro antico protegge una città sottomarina dimenticata. Ma la pressione dell'acqua è immensa e la cupola mostra crepe. Un errore e la pressione la frantumerà, travolgendoti.",
+                "environment": "dome",
+                "trap": "pressure",
+                "trapName": "Pressione che frantuma",
+                "trapAnim": "death",
+                "theme": "Tecnologia subacquea",
+                "colors": {
+                    "bg": "0x0a1a2a",
+                    "wall": "0x4a8aaa",
+                    "accent": "0x8acaea",
+                    "floor": "0x1a2a3a",
+                    "primary": "0x8acaea",
+                    "secondary": "0x9abaca"
+                },
+                "ambientParticles": "bubble"
+            }
+        ]
+    },
+    {
+        "id": 5,
+        "name": "Odissea nello Spazio",
+        "description": "Stazioni spaziali, pianeti alieni e anomalie cosmiche",
+        "intro": "Il segnale è arrivato alle 3 di notte: un'emergenza sulla Stazione Orbitale Internazionale. Sei l'unica con le competenze per risolvere il problema, ma una volta lassù niente è andato come previsto. Un'avaria dopo l'altra ti ha spinta sempre più lontano dalla Terra, attraverso il sistema solare e oltre, verso angoli dell'universo che nessun essere umano ha mai raggiunto...",
+        "icon": "rocket",
+        "levels": [
+            {
+                "id": 1,
+                "name": "La Stazione Orbitale",
+                "narration": "La stazione orbitale è in avaria. Le luci rosse di emergenza lampeggiano e l'allarme suona senza sosta. Gli sportelli di decompressione sono instabili: un errore e verrai risucchiato nel vuoto dello spazio.",
+                "environment": "space_station",
+                "trap": "airlock",
+                "trapName": "Decompressione",
+                "trapAnim": "falling",
+                "theme": "Sistema solare",
+                "colors": {
+                    "bg": "0x0a0a1a",
+                    "wall": "0x3a3a5a",
+                    "accent": "0x4a8afa",
+                    "floor": "0x1a1a2a",
+                    "primary": "0x4a8afa",
+                    "secondary": "0x7a9ad2"
+                },
+                "ambientParticles": "sparkle"
+            },
+            {
+                "id": 2,
+                "name": "La Superficie Lunare",
+                "narration": "Il paesaggio lunare è desolato e silenzioso. Crateri si estendono fino all'orizzonte. Il cielo è nero e la Terra brilla in lontananza. Meteoriti possono colpire in qualsiasi momento.",
+                "environment": "moon",
+                "trap": "meteorite",
+                "trapName": "Impatto di meteorite",
+                "trapAnim": "death",
+                "theme": "Luna e missioni Apollo",
+                "colors": {
+                    "bg": "0x1a1a1a",
+                    "wall": "0x6a6a6a",
+                    "accent": "0xaaaaaa",
+                    "floor": "0x2a2a2a",
+                    "primary": "0xaaaaaa",
+                    "secondary": "0xaaaaaa"
+                },
+                "ambientParticles": "dust"
+            },
+            {
+                "id": 3,
+                "name": "Le Tempeste di Marte",
+                "narration": "La superficie rossa di Marte si estende davanti a te. Tempeste di sabbia si alzano all'improvviso, oscurando tutto. Devi trovare la via verso il rifugio prima che la tempesta ti inghiotta.",
+                "environment": "mars",
+                "trap": "sandstorm",
+                "trapName": "Tempesta marziana",
+                "trapAnim": "death",
+                "theme": "Marte e colonizzazione",
+                "colors": {
+                    "bg": "0x2e0a0a",
+                    "wall": "0x8a3a1a",
+                    "accent": "0xca5a2a",
+                    "floor": "0x3e1a1a",
+                    "primary": "0xca5a2a",
+                    "secondary": "0xba826a"
+                },
+                "ambientParticles": "dust"
+            },
+            {
+                "id": 4,
+                "name": "L'Anello di Saturno",
+                "narration": "Navighi tra i frammenti di ghiaccio e roccia dell'anello di Saturno. Ogni pezzo è una piattaforma instabile. Un asteroide in rotta di collisione potrebbe spazzare via il tuo percorso.",
+                "environment": "saturn_ring",
+                "trap": "asteroid",
+                "trapName": "Asteroide in collisione",
+                "trapAnim": "death",
+                "theme": "Pianeti giganti",
+                "colors": {
+                    "bg": "0x0a0a0a",
+                    "wall": "0x5a5a3a",
+                    "accent": "0xdaba6a",
+                    "floor": "0x1a1a1a",
+                    "primary": "0xdaba6a",
+                    "secondary": "0xc2b28a"
+                },
+                "ambientParticles": "sparkle"
+            },
+            {
+                "id": 5,
+                "name": "La Nebulosa Tossica",
+                "narration": "Nubi di gas colorato ti avvolgono. La nebulosa è bellissima ma letale: radiazione cosmica permea ogni angolo. Solo il percorso giusto è schermato dalla radiazione mortale.",
+                "environment": "nebula",
+                "trap": "radiation",
+                "trapName": "Radiazione cosmica",
+                "trapAnim": "death",
+                "theme": "Stelle e costellazioni",
+                "colors": {
+                    "bg": "0x1a0a2e",
+                    "wall": "0x6a2a8a",
+                    "accent": "0xaa4aea",
+                    "floor": "0x2a1a3e",
+                    "primary": "0xaa4aea",
+                    "secondary": "0xaa7aca"
+                },
+                "ambientParticles": "sparkle"
+            },
+            {
+                "id": 6,
+                "name": "Il Relitto Alieno",
+                "narration": "Una nave aliena abbandonata fluttua nel vuoto. La tecnologia è incomprensibile, con simboli e meccanismi mai visti. Trappole aliene si attivano senza preavviso per gli intrusi.",
+                "environment": "alien_wreck",
+                "trap": "alien_trap",
+                "trapName": "Meccanismo alieno",
+                "trapAnim": "death",
+                "theme": "Vita extraterrestre e SETI",
+                "colors": {
+                    "bg": "0x0a1a0a",
+                    "wall": "0x2a5a2a",
+                    "accent": "0x4afa4a",
+                    "floor": "0x1a2a1a",
+                    "primary": "0x4afa4a",
+                    "secondary": "0x7ad27a"
+                },
+                "ambientParticles": "sparkle"
+            },
+            {
+                "id": 7,
+                "name": "Il Campo di Asteroidi",
+                "narration": "Massi di ogni dimensione ruotano caoticamente intorno a te. Ogni secondo un asteroide ti sfiora. Devi calcolare la traiettoria giusta per attraversare questo campo di detriti cosmici.",
+                "environment": "asteroid_field",
+                "trap": "collision",
+                "trapName": "Collisione con asteroide",
+                "trapAnim": "death",
+                "theme": "Asteroidi e comete",
+                "colors": {
+                    "bg": "0x0a0a0a",
+                    "wall": "0x4a4a4a",
+                    "accent": "0x8a8a8a",
+                    "floor": "0x1a1a1a",
+                    "primary": "0x8a8a8a",
+                    "secondary": "0x9a9a9a"
+                },
+                "ambientParticles": "dust"
+            },
+            {
+                "id": 8,
+                "name": "Il Buco Nero",
+                "narration": "L'orizzonte degli eventi è vicino. Lo spazio-tempo si distorce intorno a te, allungando le stelle in strisce luminose. La forza di marea è immensa: un passo falso e verrai spaghettificato.",
+                "environment": "black_hole",
+                "trap": "spaghettification",
+                "trapName": "Forza mareale",
+                "trapAnim": "falling",
+                "theme": "Fisica e relatività",
+                "colors": {
+                    "bg": "0x000000",
+                    "wall": "0x1a1a3a",
+                    "accent": "0xfaaa2a",
+                    "floor": "0x0a0a0a",
+                    "primary": "0xfaaa2a",
+                    "secondary": "0xd2aa6a"
+                },
+                "ambientParticles": "sparkle"
+            },
+            {
+                "id": 9,
+                "name": "La Foresta Cristallina",
+                "narration": "Un pianeta alieno ricoperto di formazioni cristalline altissime. La luce si rifrange creando arcobaleni ovunque. Ma i cristalli sono fragili e le schegge sono taglienti come rasoi.",
+                "environment": "crystal_planet",
+                "trap": "shards",
+                "trapName": "Schegge di cristallo",
+                "trapAnim": "death",
+                "theme": "Esopianeti e astrobiologia",
+                "colors": {
+                    "bg": "0x1a0a2a",
+                    "wall": "0x6a3aba",
+                    "accent": "0xaa6afa",
+                    "floor": "0x2a1a3a",
+                    "primary": "0xaa6afa",
+                    "secondary": "0xaa8ad2"
+                },
+                "ambientParticles": "sparkle"
+            },
+            {
+                "id": 10,
+                "name": "Il Portale Galattico",
+                "narration": "Un portale cosmico brilla davanti a te, collegando galassie distanti. Il wormhole è instabile e potrebbe collassare in qualsiasi momento. Questa è l'ultima sfida: attraversa il portale e torna a casa.",
+                "environment": "galactic_gate",
+                "trap": "wormhole",
+                "trapName": "Wormhole instabile",
+                "trapAnim": "falling",
+                "theme": "Universo e cosmologia",
+                "colors": {
+                    "bg": "0x0a0a1a",
+                    "wall": "0x2a2a6a",
+                    "accent": "0x4a8afa",
+                    "floor": "0x1a1a2a",
+                    "primary": "0x4a8afa",
+                    "secondary": "0x7a9ad2"
+                },
+                "ambientParticles": "sparkle"
+            }
+        ]
+    },
+    {
+        "id": 6,
+        "name": "La Dimora dei Fantasmi",
+        "description": "Una magione infestata piena di spiriti e orrori soprannaturali",
+        "intro": "La villa della vecchia contessa era rimasta chiusa per trent'anni, finché l'agenzia immobiliare non ti ha dato le chiavi per una valutazione. Appena varcata la soglia, il cancello si è chiuso da solo alle tue spalle. Le candele si sono accese una ad una, rivelando stanze piene di ombre che si muovono e sussurri che sembrano chiamarti per nome. Per uscire dovrai attraversare ogni stanza della dimora...",
+        "icon": "ghost",
+        "levels": [
+            {
+                "id": 1,
+                "name": "Il Cancello Arrugginito",
+                "narration": "Il cancello si apre con un cigolio sinistro. Gargoyle di pietra fiancheggiano il viale d'ingresso, con occhi che sembrano seguirti. Uno di loro potrebbe prendere vita se sbagli la risposta.",
+                "environment": "gate",
+                "trap": "gargoyle",
+                "trapName": "Gargoyle animato",
+                "trapAnim": "death",
+                "theme": "Letteratura gotica e horror",
+                "colors": {
+                    "bg": "0x1a1a1a",
+                    "wall": "0x3a3a4a",
+                    "accent": "0x6a6a8a",
+                    "floor": "0x2a2a2a",
+                    "primary": "0x6a6a8a",
+                    "secondary": "0x8a8a9a"
+                },
+                "ambientParticles": "dust"
+            },
+            {
+                "id": 2,
+                "name": "L'Atrio delle Candele",
+                "narration": "Centinaia di candele illuminano l'atrio con una luce tremolante. Un enorme lampadario di cristallo pende dal soffitto, dondolando pericolosamente. Un passo sbagliato e precipiterà su di te.",
+                "environment": "foyer",
+                "trap": "chandelier",
+                "trapName": "Lampadario che precipita",
+                "trapAnim": "death",
+                "theme": "Superstizioni e credenze",
+                "colors": {
+                    "bg": "0x1a1a0e",
+                    "wall": "0x4a3a2a",
+                    "accent": "0xeaaa4a",
+                    "floor": "0x2a2a1e",
+                    "primary": "0xeaaa4a",
+                    "secondary": "0xcaaa7a"
+                },
+                "ambientParticles": "fire"
+            },
+            {
+                "id": 3,
+                "name": "La Sala degli Specchi",
+                "narration": "Specchi enormi coprono ogni parete, riflettendo infinite copie di te stesso. Ma alcuni riflessi si muovono in modo diverso: il tuo doppio maligno aspetta dall'altra parte del vetro.",
+                "environment": "mirror_room",
+                "trap": "doppelganger",
+                "trapName": "Doppio maligno",
+                "trapAnim": "death",
+                "theme": "Ottica e illusioni",
+                "colors": {
+                    "bg": "0x1a1a2e",
+                    "wall": "0x5a5a7a",
+                    "accent": "0xaaaaee",
+                    "floor": "0x2a2a3e",
+                    "primary": "0xaaaaee",
+                    "secondary": "0xaaaacc"
+                },
+                "ambientParticles": "sparkle"
+            },
+            {
+                "id": 4,
+                "name": "La Biblioteca Maledetta",
+                "narration": "I libri sugli scaffali sussurrano quando ti avvicini. Pagine volano da sole e le copertine si aprono rivelando testi incomprensibili. Un libro posseduto potrebbe attaccarti se scegli male.",
+                "environment": "cursed_library",
+                "trap": "possessed_book",
+                "trapName": "Libro posseduto",
+                "trapAnim": "death",
+                "theme": "Libri proibiti e censura",
+                "colors": {
+                    "bg": "0x1a140e",
+                    "wall": "0x4a3a2a",
+                    "accent": "0x8a2a4a",
+                    "floor": "0x2a241e",
+                    "primary": "0x8a2a4a",
+                    "secondary": "0x9a6a7a"
+                },
+                "ambientParticles": "dust"
+            },
+            {
+                "id": 5,
+                "name": "La Cucina Infernale",
+                "narration": "Il camino della cucina arde con fiamme innaturali di colore verde. Pentole si muovono da sole e coltelli fluttuano nell'aria. Il fuoco del camino potrebbe divampare fuori controllo.",
+                "environment": "hell_kitchen",
+                "trap": "fire",
+                "trapName": "Fiamme infernali",
+                "trapAnim": "death",
+                "theme": "Alchimia e trasformazioni",
+                "colors": {
+                    "bg": "0x1a0e0e",
+                    "wall": "0x4a2a1a",
+                    "accent": "0x2aea2a",
+                    "floor": "0x2a1e1e",
+                    "primary": "0x2aea2a",
+                    "secondary": "0x6aca6a"
+                },
+                "ambientParticles": "fire"
+            },
+            {
+                "id": 6,
+                "name": "La Soffitta dei Giocattoli",
+                "narration": "Giocattoli polverosi ricoprono ogni superficie. Bambole con gli occhi di vetro ti fissano immobili. Una marionetta appesa a fili invisibili potrebbe animarsi e attaccare senza preavviso.",
+                "environment": "attic",
+                "trap": "puppet",
+                "trapName": "Marionetta assassina",
+                "trapAnim": "death",
+                "theme": "Giochi e giocattoli nella storia",
+                "colors": {
+                    "bg": "0x2a1a1a",
+                    "wall": "0x5a3a3a",
+                    "accent": "0xaa5a5a",
+                    "floor": "0x3a2a2a",
+                    "primary": "0xaa5a5a",
+                    "secondary": "0xaa8282"
+                },
+                "ambientParticles": "dust"
+            },
+            {
+                "id": 7,
+                "name": "La Camera da Letto Stregata",
+                "narration": "Il letto a baldacchino è coperto di ragnatele. Le tende si muovono senza vento e ombre scure strisciano sulle pareti. Se ti addormenti, l'incubo prenderà forma e ti intrappolerà per sempre.",
+                "environment": "bedroom",
+                "trap": "nightmare",
+                "trapName": "Incubo che prende forma",
+                "trapAnim": "death",
+                "theme": "Sogni e psicologia",
+                "colors": {
+                    "bg": "0x1a0a1a",
+                    "wall": "0x3a2a4a",
+                    "accent": "0x7a3a8a",
+                    "floor": "0x2a1a2a",
+                    "primary": "0x7a3a8a",
+                    "secondary": "0x92729a"
+                },
+                "ambientParticles": "dust"
+            },
+            {
+                "id": 8,
+                "name": "La Cantina dei Veleni",
+                "narration": "Botti enormi si allineano lungo le pareti della cantina. Ma non contengono vino: un gas velenoso fuoriesce dalle fessure. L'aria diventa pesante e verde ad ogni passo sbagliato.",
+                "environment": "cellar",
+                "trap": "poison_gas",
+                "trapName": "Gas velenoso",
+                "trapAnim": "death",
+                "theme": "Chimica e sostanze",
+                "colors": {
+                    "bg": "0x0e1a0e",
+                    "wall": "0x2a3a2a",
+                    "accent": "0x4aea4a",
+                    "floor": "0x1e2a1e",
+                    "primary": "0x4aea4a",
+                    "secondary": "0x7aca7a"
+                },
+                "ambientParticles": "bubble"
+            },
+            {
+                "id": 9,
+                "name": "Il Cimitero nel Giardino",
+                "narration": "Lapidi storte emergono dalla nebbia nel giardino posteriore. La terra è smossa in diversi punti. Mani scheletriche potrebbero emergere dal terreno se disturbi i morti con una risposta sbagliata.",
+                "environment": "cemetery",
+                "trap": "undead",
+                "trapName": "Non-morti",
+                "trapAnim": "death",
+                "theme": "Riti funebri nel mondo",
+                "colors": {
+                    "bg": "0x1a1a1a",
+                    "wall": "0x3a4a3a",
+                    "accent": "0x6a8a6a",
+                    "floor": "0x2a2a2a",
+                    "primary": "0x6a8a6a",
+                    "secondary": "0x8a9a8a"
+                },
+                "ambientParticles": "dust"
+            },
+            {
+                "id": 10,
+                "name": "La Torre dell'Orologio",
+                "narration": "Ingranaggi enormi girano senza sosta nella torre dell'orologio. Il ticchettio risuona ovunque, scandendo il tempo che ti resta. Gli ingranaggi giganti potrebbero stritolarti se non trovi la via d'uscita.",
+                "environment": "clock_tower",
+                "trap": "gears",
+                "trapName": "Ingranaggi giganti",
+                "trapAnim": "death",
+                "theme": "Tempo e orologi nella storia",
+                "colors": {
+                    "bg": "0x1a1a0e",
+                    "wall": "0x5a4a2a",
+                    "accent": "0xca9a3a",
+                    "floor": "0x2a2a1e",
+                    "primary": "0xca9a3a",
+                    "secondary": "0xbaa272"
+                },
+                "ambientParticles": "sparkle"
+            }
+        ]
+    }
+]

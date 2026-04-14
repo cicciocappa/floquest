@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FloQuest — Sequence Prototype v3</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #111; display: flex; flex-direction: column; align-items: center; font-family: monospace; color: #888; overflow: hidden; }
+  #game-container { position: relative; }
+  #ui { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; align-items: center; font-size: 12px; }
+  #ui button {
+    background: #1a1a2a; color: #6a6a8a; border: 1px solid #2a2a3a;
+    padding: 4px 10px; font-family: inherit; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    cursor: pointer; transition: all 0.15s;
+  }
+  #ui button:hover { background: #2a2a4a; color: #aaf; }
+  #ui button.active { background: #2a2a4a; color: #aaf; border-color: #5a5a8a; }
+  .sep { color: #333; margin: 0 4px; }
+  #info { margin-top: 4px; font-size: 11px; color: #555; text-align: center; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+</head>
+<body>
+
+<div id="game-container"></div>
+
+<div id="ui">
+  <span>Trappola:</span>
+  <button id="btnDeath" class="active">Death</button>
+  <button id="btnFalling">Falling</button>
+  <span class="sep">|</span>
+  <button id="btnReset">Reset</button>
+</div>
+<div id="info">SPAZIO per avviare — tasti 1-4 o click per scegliere (puoi cambiare fino allo scadere del tempo)</div>
+
+<script>
+
+// =====================================================================
+// CONFIG
+// =====================================================================
+const VIEWPORT_H = 1024;
+const VIEWPORT_W = 1280;
+const SPRITE_SCALE = 2;
+const SPRITE_SIZE = 128 * SPRITE_SCALE;
+const ANIM_FPS = 30;
+const MAX_LIGHTS = 10;
+const CENTER_Y = VIEWPORT_H / 2;
+
+const WALK_RIGHT_PX = 100;
+const WALK_CYCLES_APPROACH = 3;
+const WALK_CYCLES_QUESTION = 12;  // walk cycles = seconds to answer (B.1)
+const WALK_CYCLES_PRE_SELECTED = 3; // short walk when already selected during B.5
+const TOTAL_QUESTIONS = 10;
+const INITIAL_LIVES = 3;
+const WORLD_W = 40000;
+
+const CORRIDORS = [
+  { y: 128, angle: 60, walkType: 'walk_up60',
+    transIn: 'walk_right_to_up60', transOut: 'walk_up60_to_right',
+    returnWalk: 'walk_down60', returnIn: 'walk_right_to_down60', returnOut: 'walk_down60_to_right',
+    approachCycles: 2 },
+  { y: 384, angle: 45, walkType: 'walk_up',
+    transIn: 'walk_right_to_up', transOut: 'walk_up_to_right',
+    returnWalk: 'walk_down', returnIn: 'walk_right_to_down', returnOut: 'walk_down_to_right',
+    approachCycles: 1 },
+  { y: 640, angle: 45, walkType: 'walk_down',
+    transIn: 'walk_right_to_down', transOut: 'walk_down_to_right',
+    returnWalk: 'walk_up', returnIn: 'walk_right_to_up', returnOut: 'walk_up_to_right',
+    approachCycles: 1 },
+  { y: 896, angle: 60, walkType: 'walk_down60',
+    transIn: 'walk_right_to_down60', transOut: 'walk_down60_to_right',
+    returnWalk: 'walk_up60', returnIn: 'walk_right_to_up60', returnOut: 'walk_up60_to_right',
+    approachCycles: 2 },
+];
+
+// =====================================================================
+// FAKE QUESTIONS (correct answer always index 0, shuffled at runtime)
+// =====================================================================
+const FAKE_QUESTIONS = [
+  { text: "Qual è la capitale d'Italia?",
+    answers: ["Roma", "Milano", "Napoli", "Torino"] },
+  { text: "Quante regioni ha l'Italia?",
+    answers: ["20", "15", "18", "25"] },
+  { text: "Chi ha dipinto la Gioconda?",
+    answers: ["Leonardo da Vinci", "Michelangelo", "Raffaello", "Caravaggio"] },
+  { text: "Qual è il fiume più lungo d'Italia?",
+    answers: ["Po", "Tevere", "Adige", "Arno"] },
+  { text: "In che anno è caduto il Muro di Berlino?",
+    answers: ["1989", "1991", "1985", "1979"] },
+  { text: "Qual è il pianeta più grande del sistema solare?",
+    answers: ["Giove", "Saturno", "Nettuno", "Urano"] },
+  { text: "Chi ha scritto la Divina Commedia?",
+    answers: ["Dante", "Petrarca", "Boccaccio", "Ariosto"] },
+  { text: "Quante ossa ha il corpo umano adulto?",
+    answers: ["206", "186", "226", "196"] },
+  { text: "Qual è l'oceano più grande?",
+    answers: ["Pacifico", "Atlantico", "Indiano", "Artico"] },
+  { text: "In che anno l'Italia divenne repubblica?",
+    answers: ["1946", "1948", "1943", "1950"] },
+];
+
+// =====================================================================
+// ANIMATION DATABASE
+// =====================================================================
+const ANIM_DATA = {
+  idle:                  { frames: 60,  cols: 8,  rows: 8,  loop: true,  file: 'idle' },
+  walk_right:            { frames: 30,  cols: 8,  rows: 4,  loop: true,  file: 'walk_right' },
+  walk_up:               { frames: 30,  cols: 8,  rows: 4,  loop: true,  file: 'walk_up' },
+  walk_down:             { frames: 30,  cols: 8,  rows: 4,  loop: true,  file: 'walk_down' },
+  walk_up60:             { frames: 30,  cols: 8,  rows: 4,  loop: true,  file: 'walk_up60' },
+  walk_down60:           { frames: 30,  cols: 8,  rows: 4,  loop: true,  file: 'walk_down60' },
+  picking:               { frames: 224, cols: 16, rows: 14, loop: false, file: 'picking' },
+  death:                 { frames: 64,  cols: 8,  rows: 8,  loop: false, file: 'death' },
+  falling:               { frames: 100, cols: 8,  rows: 13, loop: true,  file: 'falling' },
+  idle_to_walk_right:    { frames: 7,   cols: 4,  rows: 2,  loop: false, file: 'idle_to_walk_right' },
+  walk_right_to_idle:    { frames: 7,   cols: 4,  rows: 2,  loop: false, file: 'walk_right_to_idle' },
+  walk_right_to_picking: { frames: 8,   cols: 4,  rows: 2,  loop: false, file: 'walk_right_to_picking' },
+  picking_to_idle:       { frames: 8,   cols: 4,  rows: 2,  loop: false, file: 'picking_to_idle' },
+  walk_right_to_up:      { frames: 30,  cols: 8,  rows: 4,  loop: false, file: 'walk_right_to_up' },
+  walk_up_to_right:      { frames: 30,  cols: 8,  rows: 4,  loop: false, file: 'walk_up_to_right' },
+  walk_right_to_down:    { frames: 30,  cols: 8,  rows: 4,  loop: false, file: 'walk_right_to_down' },
+  walk_down_to_right:    { frames: 30,  cols: 8,  rows: 4,  loop: false, file: 'walk_down_to_right' },
+  walk_right_to_up60:    { frames: 30,  cols: 8,  rows: 4,  loop: false, file: 'walk_right_to_up60' },
+  walk_up60_to_right:    { frames: 30,  cols: 8,  rows: 4,  loop: false, file: 'walk_up60_to_right' },
+  walk_right_to_down60:  { frames: 30,  cols: 8,  rows: 4,  loop: false, file: 'walk_right_to_down60' },
+  walk_down60_to_right:  { frames: 30,  cols: 8,  rows: 4,  loop: false, file: 'walk_down60_to_right' },
+  walk_to_death:         { frames: 8,   cols: 4,  rows: 2,  loop: false, file: 'walk_to_death' },
+  walk_to_falling:       { frames: 8,   cols: 4,  rows: 2,  loop: false, file: 'walk_to_falling' },
+};
+
+// =====================================================================
+// MOVEMENT HELPERS
+// =====================================================================
+function calcDiagonalMovement(corridorIndex) {
+  const c = CORRIDORS[corridorIndex];
+  const targetDy = c.y - CENTER_Y;
+  const totalDiagFrames = 30 + 30 * c.approachCycles + 30;
+  const dyPerFrame = targetDy / totalDiagFrames;
+  const angleRad = (c.angle * Math.PI) / 180;
+  const dxPerFrame = Math.abs(dyPerFrame) / Math.tan(angleRad);
+  const totalDiagDx = dxPerFrame * totalDiagFrames;
+  return {
+    transIn:  { dx: dxPerFrame * 30, dy: dyPerFrame * 30, frames: 30 },
+    walk:     { dx: dxPerFrame * 30 * c.approachCycles, dy: dyPerFrame * 30 * c.approachCycles, frames: 30 * c.approachCycles },
+    transOut: { dx: dxPerFrame * 30, dy: dyPerFrame * 30, frames: 30 },
+    totalDiagDx,
+  };
+}
+
+// Max round-trip diagonal dx across all corridors (for compensation)
+const MAX_DIAG_DX_ROUNDTRIP = Math.max(
+  ...CORRIDORS.map((_, i) => calcDiagonalMovement(i).totalDiagDx * 2)
+);
+
+// =====================================================================
+// CUSTOM LIGHT PIPELINE
+// =====================================================================
+const CUSTOM_LIGHT_FRAG = `#define SHADER_NAME CUSTOM_LIGHT_FS
+precision mediump float;
+struct Light { vec2 position; vec3 color; float intensity; float radius; };
+const int kMaxLights = ${MAX_LIGHTS};
+uniform vec4 uCamera;
+uniform vec2 uResolution;
+uniform sampler2D uMainSampler;
+uniform sampler2D uNormSampler;
+uniform vec3 uAmbientLightColor;
+uniform int uLightCount;
+uniform Light uLights[kMaxLights];
+varying vec2 outTexCoord;
+varying float outTexId;
+varying float outTintEffect;
+varying vec4 outTint;
+void main() {
+    vec4 texel = texture2D(uMainSampler, outTexCoord);
+    if (texel.a < 0.1) discard;
+    vec3 N = normalize(texture2D(uNormSampler, outTexCoord).rgb * 2.0 - 1.0);
+    vec3 finalColor = vec3(0.0);
+    for (int i = 0; i < kMaxLights; i++) {
+        if (i >= uLightCount) break;
+        Light light = uLights[i];
+        vec3 lightDir = vec3(
+            (light.position.x - gl_FragCoord.x) / uResolution.x,
+            (light.position.y - gl_FragCoord.y) / uResolution.y,
+            0.15);
+        vec3 L = normalize(lightDir);
+        float d = length(lightDir.xy) * uCamera.w;
+        float NdotL = max(dot(N, L), 0.0);
+        float hl = NdotL * 0.6 + 0.4;
+        float atten = 1.0 / (1.0 + 2.0 * d * d);
+        finalColor += light.color * hl * light.intensity * atten;
+    }
+    vec4 co = vec4(uAmbientLightColor + finalColor, 1.0);
+    gl_FragColor = vec4(texel.rgb * co.rgb, texel.a);
+}`;
+
+class LitSpritePipeline extends Phaser.Renderer.WebGL.Pipelines.LightPipeline {
+  constructor(config) {
+    if (config instanceof Phaser.Game) config = { game: config };
+    config.fragShader = CUSTOM_LIGHT_FRAG;
+    config.maxLights = MAX_LIGHTS;
+    config.name = 'LitSpritePipeline';
+    super(config);
+  }
+}
+
+// =====================================================================
+// SCENE
+// =====================================================================
+class SequenceScene extends Phaser.Scene {
+  constructor() { super('sequence'); }
+
+  preload() {
+    Object.entries(ANIM_DATA).forEach(([key, data]) => {
+      this.load.spritesheet(key, data.file + '_color.png', {
+        frameWidth: 128, frameHeight: 128
+      });
+      this.load.image(key + '_n', data.file + '_normal.png');
+    });
+  }
+
+  create() {
+    // Pipeline
+    this.renderer.pipelines.add('LitSpritePipeline', new LitSpritePipeline({ game: this.game }));
+
+    // Normal maps
+    Object.keys(ANIM_DATA).forEach(key => {
+      const texture = this.textures.get(key);
+      const normalTex = this.textures.get(key + '_n');
+      if (texture && normalTex) texture.setDataSource(normalTex.getSourceImage());
+    });
+
+    // Animations
+    Object.entries(ANIM_DATA).forEach(([key, data]) => {
+      const texture = this.textures.get(key);
+      const frameCount = texture.frameTotal - 1;
+      const end = Math.min(data.frames - 1, frameCount - 1);
+      if (end < 0) { console.warn('No frames for', key); return; }
+      this.anims.create({
+        key: 'anim_' + key,
+        frames: this.anims.generateFrameNumbers(key, { start: 0, end }),
+        frameRate: ANIM_FPS,
+        repeat: data.loop ? -1 : 0
+      });
+    });
+
+    // Background
+    this.drawGuides();
+
+    // Lights
+    this.lights.enable();
+    this.lights.setAmbientColor(0x0a0a10);
+    this.playerLight = this.lights.addLight(200, CENTER_Y, 400, 0xfff2dd, 1.8);
+
+    // Player
+    this.player = this.add.sprite(200, CENTER_Y, 'idle');
+    this.player.setScale(SPRITE_SCALE).setPipeline('LitSpritePipeline').setDepth(2);
+    this.player.play('anim_idle');
+
+    // Camera
+    this.cameras.main.setBounds(0, 0, WORLD_W, VIEWPORT_H);
+    this.cameras.main.startFollow(this.player, true, 0.1, 0);
+    this.cameras.main.setFollowOffset(-200, 0);
+
+    // ----- Game state -----
+    this.lives = INITIAL_LIVES;
+    this.levelRunning = false;
+    this.selectedTrapType = 'death';
+
+    // Selection state
+    this.acceptingInput = false;   // can the player select/change answers?
+    this.selectedCorridor = -1;    // currently selected answer (-1 = none)
+    this.correctCorridor = -1;     // which corridor is correct
+
+    // Timer display state
+    this._timerStart = 0;
+    this._timerDuration = 0;
+    this._timerRunning = false;
+
+    // Question UI
+    this.createQuestionUI();
+
+    // Status text
+    this.statusText = this.add.text(10, VIEWPORT_H - 30, 'SPAZIO per avviare', {
+      fontSize: '14px', color: '#5af', fontFamily: 'monospace'
+    }).setScrollFactor(0).setDepth(100);
+
+    this.posText = this.add.text(10, VIEWPORT_H - 50, '', {
+      fontSize: '12px', color: '#555', fontFamily: 'monospace'
+    }).setScrollFactor(0).setDepth(100);
+
+    // ----- Input -----
+    this.input.keyboard.on('keydown', (event) => {
+      if (event.key >= '1' && event.key <= '4') {
+        this.selectAnswer(parseInt(event.key) - 1);
+      }
+      if (event.key === ' ' && !this.levelRunning) {
+        this.runLevel();
+      }
+    });
+
+    this.input.on('pointerdown', (pointer) => {
+      if (!this.levelRunning && pointer.y > 160) {
+        this.runLevel();
+      }
+    });
+
+    this.setupHTMLUI();
+  }
+
+  // -----------------------------------------------------------------
+  // Question UI
+  // -----------------------------------------------------------------
+  createQuestionUI() {
+    const d = 200;
+
+    this.qPanel = this.add.rectangle(VIEWPORT_W / 2, 80, VIEWPORT_W - 40, 150, 0x000000, 0.82)
+      .setScrollFactor(0).setDepth(d).setVisible(false);
+    this.qBorder = this.add.rectangle(VIEWPORT_W / 2, 80, VIEWPORT_W - 40, 150)
+      .setScrollFactor(0).setDepth(d).setStrokeStyle(2, 0xc9a84c, 0.5).setVisible(false);
+
+    this.qLivesText = this.add.text(40, 18, '', {
+      fontSize: '18px', color: '#ff4444', fontFamily: 'monospace'
+    }).setScrollFactor(0).setDepth(d + 1).setVisible(false);
+
+    this.qHeaderText = this.add.text(VIEWPORT_W / 2, 18, '', {
+      fontSize: '15px', color: '#8888aa', fontFamily: 'monospace'
+    }).setScrollFactor(0).setDepth(d + 1).setOrigin(0.5, 0).setVisible(false);
+
+    this.qTimerText = this.add.text(VIEWPORT_W - 60, 18, '', {
+      fontSize: '22px', color: '#ffffff', fontFamily: 'monospace'
+    }).setScrollFactor(0).setDepth(d + 1).setOrigin(1, 0).setVisible(false);
+
+    this.qText = this.add.text(VIEWPORT_W / 2, 58, '', {
+      fontSize: '19px', color: '#ffffff', fontFamily: 'monospace',
+      align: 'center', wordWrap: { width: VIEWPORT_W - 120 }
+    }).setScrollFactor(0).setDepth(d + 1).setOrigin(0.5, 0).setVisible(false);
+
+    // Answer texts — clickable, hoverable, re-selectable
+    this.qAnswerTexts = [];
+    const spacing = (VIEWPORT_W - 80) / 4;
+    for (let i = 0; i < 4; i++) {
+      const x = 60 + spacing * i + spacing / 2;
+      const txt = this.add.text(x, 110, '', {
+        fontSize: '15px', color: '#8899bb', fontFamily: 'monospace',
+        align: 'center', wordWrap: { width: spacing - 20 }
+      }).setScrollFactor(0).setDepth(d + 1).setOrigin(0.5, 0).setVisible(false)
+        .setInteractive({ useHandCursor: true });
+
+      // Hover: lighten non-selected answers
+      txt.on('pointerover', () => {
+        if (this.acceptingInput && i !== this.selectedCorridor) {
+          txt.setColor('#bbccee');
+        }
+      });
+      txt.on('pointerout', () => {
+        if (this.acceptingInput) {
+          txt.setColor(i === this.selectedCorridor ? '#ffcc44' : '#8899bb');
+        }
+      });
+      txt.on('pointerdown', () => this.selectAnswer(i));
+
+      this.qAnswerTexts.push(txt);
+    }
+
+    this._qElements = [
+      this.qPanel, this.qBorder, this.qLivesText, this.qHeaderText,
+      this.qTimerText, this.qText, ...this.qAnswerTexts
+    ];
+  }
+
+  showQuestion(qIndex) {
+    const q = FAKE_QUESTIONS[qIndex];
+
+    // Shuffle answers
+    const indices = [0, 1, 2, 3];
+    for (let i = 3; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    this.correctCorridor = indices.indexOf(0);
+
+    // Update UI
+    this.qLivesText.setText('\u2764'.repeat(this.lives));
+    this.qHeaderText.setText('Domanda ' + (qIndex + 1) + '/' + TOTAL_QUESTIONS);
+    this.qTimerText.setText('').setColor('#ffffff');
+    this.qText.setText(q.text);
+
+    for (let i = 0; i < 4; i++) {
+      this.qAnswerTexts[i].setText('[' + (i + 1) + '] ' + q.answers[indices[i]]);
+      this.qAnswerTexts[i].setColor('#8899bb');
+    }
+
+    this._qElements.forEach(el => el.setVisible(true));
+
+    // Reset selection state — player can select/change
+    this.selectedCorridor = -1;
+    this.acceptingInput = true;
+  }
+
+  hideQuestion() {
+    this._qElements.forEach(el => el.setVisible(false));
+    this.acceptingInput = false;
+    this._timerRunning = false;
+  }
+
+  // -----------------------------------------------------------------
+  // Selection system — player can change answer until lock-in
+  // -----------------------------------------------------------------
+  selectAnswer(index) {
+    if (!this.acceptingInput) return;
+    if (index < 0 || index > 3) return;
+
+    this.selectedCorridor = index;
+
+    // Update highlights: gold for selected, default for others
+    for (let i = 0; i < 4; i++) {
+      this.qAnswerTexts[i].setColor(i === index ? '#ffcc44' : '#8899bb');
+    }
+  }
+
+  // Called when walk ends (point of no return) — locks current selection
+  lockInAnswer() {
+    this.acceptingInput = false;
+
+    if (this.selectedCorridor === -1) {
+      // No selection made — auto-pick a wrong corridor
+      let w;
+      do { w = Phaser.Math.Between(0, 3); } while (w === this.correctCorridor);
+      return { corridor: w, correct: false, timedOut: true };
+    }
+
+    return {
+      corridor: this.selectedCorridor,
+      correct: this.selectedCorridor === this.correctCorridor
+    };
+  }
+
+  // -----------------------------------------------------------------
+  // Animation helpers
+  // -----------------------------------------------------------------
+  setStatus(txt) { this.statusText.setText(txt); }
+
+  delay(ms) {
+    return new Promise(resolve => this.time.delayedCall(ms, resolve));
+  }
+
+  tweenPromise(config) {
+    return new Promise(resolve => {
+      this.tweens.add({ ...config, onComplete: resolve });
+    });
+  }
+
+  step(animKey, cycles, dx, dy, continueAnim) {
+    return new Promise(resolve => {
+      const data = ANIM_DATA[animKey];
+      if (!data) { console.warn('Unknown anim:', animKey); resolve(); return; }
+      const phaserAnim = this.anims.get('anim_' + animKey);
+      if (!phaserAnim) { console.warn('Anim not created:', animKey); resolve(); return; }
+
+      const actualFrames = phaserAnim.frames.length;
+      const totalFrames = data.loop ? actualFrames * cycles : actualFrames;
+      const duration = (totalFrames / ANIM_FPS) * 1000;
+
+      if (continueAnim && this.player.anims.currentAnim &&
+          this.player.anims.currentAnim.key === 'anim_' + animKey) {
+        // continue playing
+      } else {
+        this.player.play('anim_' + animKey);
+      }
+
+      this.setStatus(animKey + (cycles > 1 ? ' x' + cycles : ''));
+
+      if (dx !== 0 || dy !== 0) {
+        this.tweens.add({
+          targets: this.player,
+          x: this.player.x + dx,
+          y: this.player.y + dy,
+          duration, ease: 'Linear'
+        });
+      }
+
+      this.time.delayedCall(duration, resolve);
+    });
+  }
+
+  walkOneCycle() {
+    this.player.play('anim_walk_right', true);
+    return this.tweenPromise({
+      targets: this.player,
+      x: this.player.x + WALK_RIGHT_PX,
+      duration: 1000,
+      ease: 'Linear'
+    });
+  }
+
+  get isWalking() {
+    const key = this.player.anims.currentAnim ? this.player.anims.currentAnim.key : '';
+    return key.includes('walk');
+  }
+
+  // -----------------------------------------------------------------
+  // LEVEL FLOW
+  // -----------------------------------------------------------------
+  async runLevel() {
+    if (this.levelRunning) return;
+    this.levelRunning = true;
+    this.lives = INITIAL_LIVES;
+
+    // === Phase A — Intro ===
+    this.setStatus('Intro livello');
+    await this.step('idle', 2, 0, 0);
+    await this.step('idle_to_walk_right', 1, 0, 0);
+    await this.step('walk_right', WALK_CYCLES_APPROACH, WALK_RIGHT_PX * WALK_CYCLES_APPROACH, 0);
+    await this.step('walk_right_to_picking', 1, 0, 0);
+    await this.step('picking', 1, 0, 0);
+    await this.step('picking_to_idle', 1, 0, 0);
+
+    console.log(`INTRO DONE | x:${Math.round(this.player.x)} y:${Math.round(this.player.y)}`);
+
+    // === Phase B — Question loop ===
+    let q = 0;
+    while (q < TOTAL_QUESTIONS) {
+      if (!this.levelRunning) return;
+
+      const result = await this.runQuestion(q);
+
+      if (result === 'correct') {
+        q++;
+      } else if (result === 'gameover') {
+        this.setStatus('GAME OVER — click Reset');
+        this.levelRunning = false;
+        return;
+      }
+      // 'retry' → same question
+    }
+
+    // === Victory ===
+    this.hideQuestion();
+    if (this.isWalking) {
+      await this.step('walk_right_to_idle', 1, 0, 0);
+    }
+    this.player.play('anim_idle');
+    this.setStatus('LIVELLO COMPLETATO!');
+    this.levelRunning = false;
+  }
+
+  // -----------------------------------------------------------------
+  // SINGLE QUESTION (B.1 through B.5)
+  // -----------------------------------------------------------------
+  async runQuestion(qIndex) {
+    console.log(`--- Q${qIndex+1} START | x:${Math.round(this.player.x)} y:${Math.round(this.player.y)}`);
+
+    // =============================================
+    // B.1 — Question visible + Walk (= decision time)
+    // =============================================
+
+    // Show question if not already visible (Q1 or after respawn)
+    // For Q2+ it was shown during B.5 of previous question
+    if (!this.qPanel.visible) {
+      this.showQuestion(qIndex);
+    }
+
+    // Determine walk length: short if player already selected during B.5
+    const preSelected = this.selectedCorridor !== -1;
+    const walkCycles = preSelected ? WALK_CYCLES_PRE_SELECTED : WALK_CYCLES_QUESTION;
+
+    // Transition from idle if needed
+    if (!this.isWalking) {
+      await this.step('idle_to_walk_right', 1, 0, 0);
+    }
+
+    // Start countdown timer
+    this._timerStart = this.time.now;
+    this._timerDuration = walkCycles * 1000;
+    this._timerRunning = true;
+    this.setStatus('Scegli il passaggio...');
+
+    // Walk cycle-by-cycle — player can select/change answer the whole time
+    for (let i = 0; i < walkCycles; i++) {
+      await this.walkOneCycle();
+    }
+
+    // === Point of no return — lock in answer ===
+    this._timerRunning = false;
+    const answer = this.lockInAnswer();
+    answer.correct = true; // force correct for trajectory testing
+    this.hideQuestion();
+
+    if (!this.levelRunning) return 'gameover';
+
+    // =============================================
+    // B.2 — Move to corridor
+    // =============================================
+    this.preCorridorX = this.player.x;
+
+    const ci = answer.corridor;
+    const c = CORRIDORS[ci];
+    const mov = calcDiagonalMovement(ci);
+
+    // Compensation: extra walk_right px for corridors with less diagonal dx
+    const compTotal = MAX_DIAG_DX_ROUNDTRIP - mov.totalDiagDx * 2;
+    const compHalf = compTotal / 2;
+
+    this.setStatus('Verso corridoio ' + (ci + 1));
+    await this.step('walk_right', 1, WALK_RIGHT_PX, 0, true);
+    console.log(`Q${qIndex+1} C${ci+1} | walk_right→diag   x:${Math.round(this.player.x)} y:${Math.round(this.player.y)}`);
+    await this.step(c.transIn, 1, mov.transIn.dx, mov.transIn.dy);
+    if (c.approachCycles > 0) {
+      await this.step(c.walkType, c.approachCycles, mov.walk.dx, mov.walk.dy);
+    }
+    await this.step(c.transOut, 1, mov.transOut.dx, mov.transOut.dy);
+    console.log(`Q${qIndex+1} C${ci+1} | diag→walk_right   x:${Math.round(this.player.x)} y:${Math.round(this.player.y)}`);
+
+    // =============================================
+    // B.3 — First half corridor (suspense)
+    // =============================================
+    this.setStatus('Corridoio ' + (ci + 1) + ' — suspense...');
+    await this.step('walk_right', 2, WALK_RIGHT_PX * 2 + compHalf, 0);
+
+    // =============================================
+    // B.4 — Outcome
+    // =============================================
+    if (answer.correct) {
+      this.setStatus('Corridoio ' + (ci + 1) + ' — passaggio sicuro!');
+      await this.step('walk_right', 2, WALK_RIGHT_PX * 2 + compHalf, 0);
+      console.log(`Q${qIndex+1} C${ci+1} | walk_right→return x:${Math.round(this.player.x)} y:${Math.round(this.player.y)}`);
+
+      // Show next question during return (if not last)
+      if (qIndex < TOTAL_QUESTIONS - 1) {
+        this.showQuestion(qIndex + 1);
+      }
+
+      // =============================================
+      // B.5 — Return to center (next question already visible)
+      // =============================================
+      this.setStatus('Ritorno al centro');
+      await this.step(c.returnIn, 1, mov.transIn.dx, -mov.transIn.dy);
+      if (c.approachCycles > 0) {
+        await this.step(c.returnWalk, c.approachCycles, mov.walk.dx, -mov.walk.dy);
+      }
+      await this.step(c.returnOut, 1, mov.transOut.dx, -mov.transOut.dy);
+      console.log(`Q${qIndex+1} C${ci+1} | return→walk_right x:${Math.round(this.player.x)} y:${Math.round(this.player.y)}`);
+
+      return 'correct';
+    } else {
+      // --- WRONG: trap! ---
+      this.setStatus('TRAPPOLA!');
+
+      if (this.selectedTrapType === 'death') {
+        await this.step('walk_to_death', 1, 0, 0);
+        await this.step('death', 1, 0, 0);
+        await this.delay(1200);
+      } else {
+        await this.step('walk_to_falling', 1, 0, 0);
+        this.player.play('anim_falling');
+        this.setStatus('falling');
+        await this.tweenPromise({
+          targets: this.player,
+          y: this.player.y + 400,
+          duration: 2000,
+          ease: 'Quad.easeIn'
+        });
+        await this.delay(500);
+      }
+
+      this.lives--;
+
+      if (this.lives <= 0) {
+        return 'gameover';
+      }
+
+      // Respawn
+      await this.tweenPromise({ targets: this.player, alpha: 0, duration: 400 });
+      this.player.x = this.preCorridorX;
+      this.player.y = CENTER_Y;
+      this.player.play('anim_idle');
+      await this.tweenPromise({ targets: this.player, alpha: 1, duration: 400 });
+
+      // Re-show same question
+      this.showQuestion(qIndex);
+
+      return 'retry';
+    }
+  }
+
+  // -----------------------------------------------------------------
+  // Reset
+  // -----------------------------------------------------------------
+  resetAll() {
+    this.tweens.killAll();
+    this.levelRunning = false;
+    this.acceptingInput = false;
+    this.selectedCorridor = -1;
+    this._timerRunning = false;
+    this.hideQuestion();
+    this.player.setAlpha(1);
+    this.player.x = 200;
+    this.player.y = CENTER_Y;
+    this.player.play('anim_idle');
+    this.setStatus('SPAZIO per avviare');
+  }
+
+  // -----------------------------------------------------------------
+  // Update
+  // -----------------------------------------------------------------
+  update() {
+    this.playerLight.x = this.player.x;
+    this.playerLight.y = this.player.y - 30;
+
+    this.posText.setText(
+      'x:' + Math.round(this.player.x) + '  y:' + Math.round(this.player.y) +
+      '  vite:' + this.lives
+    );
+
+    // Timer countdown — counts down the walk duration
+    if (this._timerRunning && this.qTimerText.visible) {
+      const elapsed = this.time.now - this._timerStart;
+      const remaining = Math.max(0, (this._timerDuration - elapsed) / 1000);
+      this.qTimerText.setText(Math.ceil(remaining) + 's');
+      if (remaining < 3) {
+        this.qTimerText.setColor('#ff4444');
+      } else if (remaining < 6) {
+        this.qTimerText.setColor('#ffaa44');
+      } else {
+        this.qTimerText.setColor('#ffffff');
+      }
+    }
+  }
+
+  // -----------------------------------------------------------------
+  // HTML UI
+  // -----------------------------------------------------------------
+  setupHTMLUI() {
+    const scene = this;
+    ['Death', 'Falling'].forEach(name => {
+      document.getElementById('btn' + name).onclick = () => {
+        scene.selectedTrapType = name.toLowerCase();
+        document.getElementById('btnDeath').classList.toggle('active', name === 'Death');
+        document.getElementById('btnFalling').classList.toggle('active', name === 'Falling');
+      };
+    });
+    document.getElementById('btnReset').onclick = () => scene.resetAll();
+  }
+
+  // -----------------------------------------------------------------
+  // Visual guides
+  // -----------------------------------------------------------------
+  drawGuides() {
+    const g = this.add.graphics().setDepth(0);
+
+    g.fillStyle(0x0f0f14);
+    g.fillRect(0, 0, WORLD_W, VIEWPORT_H);
+
+    g.lineStyle(1, 0x2a2a3a);
+    g.lineBetween(0, CENTER_Y, WORLD_W, CENTER_Y);
+
+    const colors = [0x1a2a1a, 0x1a1a2a, 0x2a1a2a, 0x2a2a1a];
+    const labels = ['Corridoio 1 (top)', 'Corridoio 2', 'Corridoio 3', 'Corridoio 4 (bottom)'];
+
+    CORRIDORS.forEach((c, i) => {
+      const top = c.y - SPRITE_SIZE / 2;
+      g.fillStyle(colors[i], 0.3);
+      g.fillRect(0, top, WORLD_W, SPRITE_SIZE);
+      g.lineStyle(1, 0x333344);
+      g.lineBetween(0, c.y, WORLD_W, c.y);
+      this.add.text(20, c.y - 8, labels[i], {
+        fontSize: '11px', color: '#444', fontFamily: 'monospace'
+      }).setDepth(1);
+    });
+
+    this.add.text(20, CENTER_Y - 20, 'CENTRO (y=512)', {
+      fontSize: '11px', color: '#336', fontFamily: 'monospace'
+    }).setDepth(1);
+
+    for (let x = 0; x < WORLD_W; x += 100) {
+      const isMajor = x % 500 === 0;
+      g.lineStyle(1, isMajor ? 0x2a2a3a : 0x161620);
+      g.lineBetween(x, 0, x, VIEWPORT_H);
+      if (isMajor) {
+        this.add.text(x + 4, CENTER_Y + 6, String(x), {
+          fontSize: '10px', color: '#333', fontFamily: 'monospace'
+        }).setDepth(1);
+      }
+    }
+  }
+}
+
+// =====================================================================
+// GAME
+// =====================================================================
+new Phaser.Game({
+  type: Phaser.WEBGL,
+  width: VIEWPORT_W,
+  height: VIEWPORT_H,
+  backgroundColor: '#000000',
+  parent: 'game-container',
+  scene: SequenceScene,
+  pixelArt: true,
+  scale: {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH
+  }
+});
+
+</script>
+</body>
+</html>

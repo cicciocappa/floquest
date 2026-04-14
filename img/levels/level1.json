@@ -1,0 +1,1004 @@
+{
+  "skyHeight": 224,
+  "lighting": {
+    "ambientColor": "#0a0a10",
+    "lightMultiplier": 0.5,
+    "playerLight": false,
+    "playerLightIntensity": 1,
+    "playerLightRadius": 400,
+    "playerLightColor": "#c29d38"
+  },
+  "elements": [
+    {
+      "id": 1,
+      "type": "rect",
+      "x": 0,
+      "y": 224,
+      "w": 2800,
+      "h": 800,
+      "texId": "stone_floor",
+      "layer": 0,
+      "tile": true,
+      "tint": "#424242"
+    },
+    {
+      "id": 3,
+      "type": "sprite",
+      "x": 1203,
+      "y": -70,
+      "w": 117,
+      "h": 320,
+      "texId": "statue",
+      "layer": 1,
+      "tile": false
+    },
+    {
+      "id": 4,
+      "type": "sprite",
+      "x": 662,
+      "y": -71,
+      "w": 117,
+      "h": 320,
+      "texId": "statue",
+      "layer": 1,
+      "tile": false,
+      "tint": "#c8c8c8"
+    },
+    {
+      "id": 9,
+      "type": "sprite",
+      "x": 1811,
+      "y": 55,
+      "w": 122,
+      "h": 192,
+      "texId": "statue_cat",
+      "layer": 1,
+      "tile": false
+    },
+    {
+      "id": 10,
+      "type": "sprite",
+      "x": 2022,
+      "y": 55,
+      "w": 122,
+      "h": 192,
+      "texId": "statue_cat",
+      "layer": 1,
+      "tile": false
+    },
+    {
+      "id": 11,
+      "type": "sprite",
+      "x": 2233,
+      "y": 55,
+      "w": 122,
+      "h": 192,
+      "texId": "statue_cat",
+      "layer": 1,
+      "tile": false
+    },
+    {
+      "id": 13,
+      "type": "sprite",
+      "x": 370,
+      "y": -70,
+      "w": 161,
+      "h": 320,
+      "texId": "statue_anubi",
+      "layer": 1,
+      "tile": false,
+      "tint": "#a0a0a0"
+    },
+    {
+      "id": 14,
+      "type": "rect",
+      "x": 0,
+      "y": 0,
+      "w": 2800,
+      "h": 224,
+      "texId": "temple_wall",
+      "layer": 0,
+      "tile": true,
+      "tint": "#7f7f7f"
+    },
+    {
+      "id": 20,
+      "type": "sprite",
+      "x": 844,
+      "y": 714,
+      "w": 133,
+      "h": 317,
+      "texId": "statue_back",
+      "layer": 5,
+      "tile": false,
+      "tint": "#646464"
+    },
+    {
+      "id": 49,
+      "type": "sprite",
+      "x": 1985,
+      "y": 614,
+      "groupId": 2,
+      "w": 31,
+      "h": 50,
+      "texId": "jar3",
+      "layer": 3,
+      "tile": false
+    },
+    {
+      "id": 21,
+      "type": "sprite",
+      "x": 1399,
+      "y": 714,
+      "w": 133,
+      "h": 317,
+      "texId": "statue_back",
+      "layer": 3,
+      "tile": false
+    },
+    {
+      "id": 59,
+      "type": "sprite",
+      "x": 2279,
+      "y": 601,
+      "groupId": 2,
+      "w": 31,
+      "h": 50,
+      "texId": "jar3",
+      "layer": 3,
+      "tile": false,
+      "tint": "#949494"
+    },
+    {
+      "id": 61,
+      "type": "sprite",
+      "x": 2327,
+      "y": 609,
+      "groupId": 2,
+      "w": 32,
+      "h": 48,
+      "texId": "jar1",
+      "layer": 3,
+      "tile": false,
+      "tint": "#949494"
+    },
+    {
+      "id": 22,
+      "type": "sprite",
+      "x": 552,
+      "y": 710,
+      "w": 163,
+      "h": 320,
+      "texId": "statue_anubi_back",
+      "layer": 5,
+      "tile": false,
+      "tint": "#424242"
+    },
+    {
+      "id": 23,
+      "type": "sprite",
+      "x": 1107,
+      "y": 711,
+      "w": 163,
+      "h": 320,
+      "texId": "statue_anubi_back",
+      "layer": 5,
+      "tile": false,
+      "tint": "#a0a0a0"
+    },
+    {
+      "id": 26,
+      "type": "sprite",
+      "x": 1405,
+      "y": 115,
+      "w": 18,
+      "h": 48,
+      "texId": "torch",
+      "layer": 1,
+      "tile": false
+    },
+    {
+      "id": 27,
+      "type": "sprite",
+      "x": 1401,
+      "y": 66,
+      "w": 36,
+      "h": 48,
+      "texId": "Torch Animated",
+      "layer": 1,
+      "tile": false
+    },
+    {
+      "id": 29,
+      "type": "sprite",
+      "x": 1582,
+      "y": 760,
+      "w": 99,
+      "h": 72,
+      "texId": "brazier",
+      "layer": 5,
+      "tile": false
+    },
+    {
+      "id": 30,
+      "type": "sprite",
+      "x": 1603,
+      "y": 718,
+      "w": 36,
+      "h": 48,
+      "texId": "Torch Animated",
+      "layer": 5,
+      "tile": false
+    },
+    {
+      "id": 31,
+      "type": "sprite",
+      "x": 1633,
+      "y": 718,
+      "w": 36,
+      "h": 48,
+      "texId": "Torch Animated",
+      "layer": 5,
+      "tile": false
+    },
+    {
+      "id": 32,
+      "type": "sprite",
+      "x": 1618,
+      "y": 721,
+      "w": 36,
+      "h": 48,
+      "texId": "Torch Animated",
+      "layer": 5,
+      "tile": false
+    },
+    {
+      "id": 33,
+      "type": "light",
+      "x": 1633,
+      "y": 722,
+      "lightMode": "point",
+      "lightColor": "#fff2dd",
+      "lightIntensity": 3.1,
+      "lightRadius": 400
+    },
+    {
+      "id": 34,
+      "type": "light",
+      "x": 1412,
+      "y": 108,
+      "lightMode": "point",
+      "lightColor": "#cde557",
+      "lightIntensity": 0.5,
+      "lightRadius": 400
+    },
+    {
+      "id": 35,
+      "type": "sprite",
+      "x": 143,
+      "y": 782,
+      "w": 160,
+      "h": 250,
+      "texId": "broken_statue_base",
+      "layer": 5,
+      "tile": false,
+      "tint": "#424242",
+      "rotation": 12
+    },
+    {
+      "id": 38,
+      "type": "sprite",
+      "x": 338,
+      "y": 940,
+      "w": 112,
+      "h": 64,
+      "texId": "fragments2",
+      "layer": 5,
+      "tile": false,
+      "tint": "#4d4d4d"
+    },
+    {
+      "id": 39,
+      "type": "sprite",
+      "x": 927,
+      "y": 138,
+      "w": 128,
+      "h": 126,
+      "texId": "broken_anubi_statue",
+      "layer": 1,
+      "tile": false,
+      "tint": "#c8c8c8"
+    },
+    {
+      "id": 41,
+      "type": "sprite",
+      "x": 837,
+      "y": 269,
+      "w": 138,
+      "h": 66,
+      "texId": "fragments1",
+      "layer": 1,
+      "tile": false,
+      "tint": "#c8c8c8"
+    },
+    {
+      "id": 43,
+      "type": "sprite",
+      "x": 30,
+      "y": 190,
+      "w": 320,
+      "h": 150,
+      "texId": "broken_statue",
+      "layer": 3,
+      "tile": false,
+      "tint": "#787878"
+    },
+    {
+      "id": 44,
+      "type": "sprite",
+      "x": 380,
+      "y": 333,
+      "w": 138,
+      "h": 66,
+      "texId": "fragments1",
+      "layer": 1,
+      "tile": false,
+      "tint": "#787878",
+      "rotation": 21
+    },
+    {
+      "id": 45,
+      "type": "sprite",
+      "x": 719,
+      "y": 797,
+      "w": 112,
+      "h": 64,
+      "texId": "fragments2",
+      "layer": 5,
+      "tile": false,
+      "tint": "#646464",
+      "rotation": -20
+    },
+    {
+      "id": 46,
+      "type": "sprite",
+      "x": 1884,
+      "y": 95,
+      "w": 435,
+      "h": 55,
+      "texId": "darts",
+      "layer": 5,
+      "tile": false,
+      "trap": true,
+      "trapAnimType": "tween",
+      "trapHidden": true,
+      "trapCorridor": 4,
+      "trapOffset": [
+        6,
+        14,
+        21,
+        28
+      ],
+      "trapTween": [
+        {
+          "prop": "y",
+          "from": 90,
+          "to": 1024
+        },
+        {
+          "prop": "x",
+          "from": 1884,
+          "to": 2000
+        }
+      ],
+      "trapTweenDuration": 300,
+      "trapTweenEase": "Linear"
+    },
+    {
+      "id": 47,
+      "type": "sprite",
+      "x": 1913,
+      "y": 607,
+      "groupId": 2,
+      "w": 32,
+      "h": 48,
+      "texId": "jar1",
+      "layer": 3,
+      "tile": false
+    },
+    {
+      "id": 48,
+      "type": "sprite",
+      "x": 2019,
+      "y": 603,
+      "groupId": 2,
+      "w": 35,
+      "h": 54,
+      "texId": "jar2.",
+      "layer": 3,
+      "tile": false,
+      "tint": "#949494"
+    },
+    {
+      "id": 50,
+      "type": "sprite",
+      "x": 2075,
+      "y": 605,
+      "groupId": 2,
+      "w": 31,
+      "h": 50,
+      "texId": "jar3",
+      "layer": 3,
+      "tile": false,
+      "tint": "#949494"
+    },
+    {
+      "id": 51,
+      "type": "sprite",
+      "x": 2128,
+      "y": 599,
+      "groupId": 2,
+      "w": 31,
+      "h": 50,
+      "texId": "jar3",
+      "layer": 3,
+      "tile": false,
+      "tint": "#949494"
+    },
+    {
+      "id": 52,
+      "type": "sprite",
+      "x": 1944,
+      "y": 611,
+      "groupId": 2,
+      "w": 35,
+      "h": 54,
+      "texId": "jar2.",
+      "layer": 3,
+      "tile": false
+    },
+    {
+      "id": 53,
+      "type": "sprite",
+      "x": 2040,
+      "y": 602,
+      "groupId": 2,
+      "w": 31,
+      "h": 50,
+      "texId": "jar3",
+      "layer": 3,
+      "tile": false,
+      "tint": "#949494"
+    },
+    {
+      "id": 54,
+      "type": "sprite",
+      "x": 2150,
+      "y": 612,
+      "groupId": 2,
+      "w": 35,
+      "h": 54,
+      "texId": "jar2.",
+      "layer": 3,
+      "tile": false,
+      "tint": "#949494"
+    },
+    {
+      "id": 55,
+      "type": "sprite",
+      "x": 2190,
+      "y": 601,
+      "groupId": 2,
+      "w": 35,
+      "h": 54,
+      "texId": "jar2.",
+      "layer": 3,
+      "tile": false,
+      "tint": "#949494"
+    },
+    {
+      "id": 57,
+      "type": "sprite",
+      "x": 2246,
+      "y": 600,
+      "groupId": 2,
+      "w": 35,
+      "h": 54,
+      "texId": "jar2.",
+      "layer": 3,
+      "tile": false,
+      "tint": "#949494"
+    },
+    {
+      "id": 58,
+      "type": "sprite",
+      "x": 2298,
+      "y": 614,
+      "groupId": 2,
+      "w": 31,
+      "h": 50,
+      "texId": "jar3",
+      "layer": 3,
+      "tile": false,
+      "tint": "#949494"
+    },
+    {
+      "id": 60,
+      "type": "sprite",
+      "x": 2362,
+      "y": 604,
+      "groupId": 2,
+      "w": 31,
+      "h": 50,
+      "texId": "jar3",
+      "layer": 3,
+      "tile": false,
+      "tint": "#949494"
+    },
+    {
+      "id": 62,
+      "type": "sprite",
+      "x": 2402,
+      "y": 607,
+      "groupId": 2,
+      "w": 32,
+      "h": 48,
+      "texId": "jar1",
+      "layer": 3,
+      "tile": false,
+      "tint": "#949494"
+    },
+    {
+      "id": 63,
+      "type": "sprite",
+      "x": 2241,
+      "y": 808,
+      "groupId": 3,
+      "w": 31,
+      "h": 50,
+      "texId": "jar3",
+      "layer": 4,
+      "tile": false,
+      "tint": "#b8b2b2"
+    },
+    {
+      "id": 64,
+      "type": "sprite",
+      "x": 2289,
+      "y": 816,
+      "groupId": 3,
+      "w": 32,
+      "h": 48,
+      "texId": "jar1",
+      "layer": 4,
+      "tile": false,
+      "tint": "#b8b2b2"
+    },
+    {
+      "id": 65,
+      "type": "sprite",
+      "x": 1934,
+      "y": 812,
+      "groupId": 3,
+      "w": 32,
+      "h": 48,
+      "texId": "jar1",
+      "layer": 4,
+      "tile": false,
+      "tint": "#fffafa"
+    },
+    {
+      "id": 66,
+      "type": "sprite",
+      "x": 1981,
+      "y": 810,
+      "groupId": 3,
+      "w": 35,
+      "h": 54,
+      "texId": "jar2.",
+      "layer": 4,
+      "tile": false,
+      "tint": "#eee7e7"
+    },
+    {
+      "id": 67,
+      "type": "sprite",
+      "x": 2035,
+      "y": 814,
+      "groupId": 3,
+      "w": 31,
+      "h": 50,
+      "texId": "jar3",
+      "layer": 4,
+      "tile": false,
+      "tint": "#b8b2b2"
+    },
+    {
+      "id": 68,
+      "type": "sprite",
+      "x": 2090,
+      "y": 806,
+      "groupId": 3,
+      "w": 31,
+      "h": 50,
+      "texId": "jar3",
+      "layer": 4,
+      "tile": false,
+      "tint": "#b8b2b2"
+    },
+    {
+      "id": 69,
+      "type": "sprite",
+      "x": 2009,
+      "y": 817,
+      "groupId": 3,
+      "w": 31,
+      "h": 50,
+      "texId": "jar3",
+      "layer": 4,
+      "tile": false,
+      "tint": "#b8b2b2"
+    },
+    {
+      "id": 70,
+      "type": "sprite",
+      "x": 2112,
+      "y": 819,
+      "groupId": 3,
+      "w": 35,
+      "h": 54,
+      "texId": "jar2.",
+      "layer": 4,
+      "tile": false,
+      "tint": "#b8b2b2"
+    },
+    {
+      "id": 71,
+      "type": "sprite",
+      "x": 2152,
+      "y": 808,
+      "groupId": 3,
+      "w": 35,
+      "h": 54,
+      "texId": "jar2.",
+      "layer": 4,
+      "tile": false,
+      "tint": "#b8b2b2"
+    },
+    {
+      "id": 72,
+      "type": "sprite",
+      "x": 2208,
+      "y": 807,
+      "groupId": 3,
+      "w": 35,
+      "h": 54,
+      "texId": "jar2.",
+      "layer": 4,
+      "tile": false,
+      "tint": "#b8b2b2"
+    },
+    {
+      "id": 73,
+      "type": "sprite",
+      "x": 2260,
+      "y": 821,
+      "groupId": 3,
+      "w": 31,
+      "h": 50,
+      "texId": "jar3",
+      "layer": 4,
+      "tile": false,
+      "tint": "#b8b2b2"
+    },
+    {
+      "id": 74,
+      "type": "sprite",
+      "x": 2324,
+      "y": 811,
+      "groupId": 3,
+      "w": 31,
+      "h": 50,
+      "texId": "jar3",
+      "layer": 4,
+      "tile": false,
+      "tint": "#b8b2b2"
+    },
+    {
+      "id": 75,
+      "type": "sprite",
+      "x": 2364,
+      "y": 814,
+      "groupId": 3,
+      "w": 32,
+      "h": 48,
+      "texId": "jar1",
+      "layer": 4,
+      "tile": false,
+      "tint": "#b8b2b2"
+    },
+    {
+      "id": 76,
+      "type": "sprite",
+      "x": 2271,
+      "y": 379,
+      "groupId": 4,
+      "w": 31,
+      "h": 50,
+      "texId": "jar3",
+      "layer": 2,
+      "tile": false,
+      "tint": "#797272"
+    },
+    {
+      "id": 77,
+      "type": "sprite",
+      "x": 2319,
+      "y": 387,
+      "groupId": 4,
+      "w": 32,
+      "h": 48,
+      "texId": "jar1",
+      "layer": 2,
+      "tile": false,
+      "tint": "#797272"
+    },
+    {
+      "id": 79,
+      "type": "sprite",
+      "x": 2011,
+      "y": 381,
+      "groupId": 4,
+      "w": 35,
+      "h": 54,
+      "texId": "jar2.",
+      "layer": 2,
+      "tile": false,
+      "tint": "#797272"
+    },
+    {
+      "id": 80,
+      "type": "sprite",
+      "x": 2076,
+      "y": 383,
+      "groupId": 4,
+      "w": 31,
+      "h": 50,
+      "texId": "jar3",
+      "layer": 2,
+      "tile": false,
+      "tint": "#797272"
+    },
+    {
+      "id": 81,
+      "type": "sprite",
+      "x": 2120,
+      "y": 377,
+      "groupId": 4,
+      "w": 31,
+      "h": 50,
+      "texId": "jar3",
+      "layer": 2,
+      "tile": false,
+      "tint": "#797272"
+    },
+    {
+      "id": 82,
+      "type": "sprite",
+      "x": 2039,
+      "y": 388,
+      "groupId": 4,
+      "w": 31,
+      "h": 50,
+      "texId": "jar3",
+      "layer": 2,
+      "tile": false,
+      "tint": "#797272"
+    },
+    {
+      "id": 83,
+      "type": "sprite",
+      "x": 2142,
+      "y": 390,
+      "groupId": 4,
+      "w": 35,
+      "h": 54,
+      "texId": "jar2.",
+      "layer": 2,
+      "tile": false,
+      "tint": "#797272",
+      "flipX": true
+    },
+    {
+      "id": 84,
+      "type": "sprite",
+      "x": 2182,
+      "y": 379,
+      "groupId": 4,
+      "w": 35,
+      "h": 54,
+      "texId": "jar2.",
+      "layer": 2,
+      "tile": false,
+      "tint": "#797272"
+    },
+    {
+      "id": 85,
+      "type": "sprite",
+      "x": 2238,
+      "y": 378,
+      "groupId": 4,
+      "w": 35,
+      "h": 54,
+      "texId": "jar2.",
+      "layer": 2,
+      "tile": false,
+      "tint": "#797272"
+    },
+    {
+      "id": 86,
+      "type": "sprite",
+      "x": 2290,
+      "y": 392,
+      "groupId": 4,
+      "w": 31,
+      "h": 50,
+      "texId": "jar3",
+      "layer": 2,
+      "tile": false,
+      "tint": "#797272"
+    },
+    {
+      "id": 87,
+      "type": "sprite",
+      "x": 2354,
+      "y": 382,
+      "groupId": 4,
+      "w": 31,
+      "h": 50,
+      "texId": "jar3",
+      "layer": 2,
+      "tile": false,
+      "tint": "#797272"
+    },
+    {
+      "id": 49,
+      "type": "sprite",
+      "x": 1985,
+      "y": 614,
+      "w": 31,
+      "h": 50,
+      "texId": "jar3",
+      "layer": 3,
+      "tile": false
+    },
+    {
+      "id": 88,
+      "type": "sprite",
+      "x": 541,
+      "y": 693,
+      "w": 32,
+      "h": 26,
+      "texId": "scroll",
+      "layer": 1,
+      "tile": false,
+      "pick": true
+    }
+  ],
+  "groups": {
+    "2": {
+      "name": "vasi middle"
+    },
+    "3": {
+      "name": "vasi bottom"
+    },
+    "4": {
+      "name": "vasi top"
+    }
+  },
+  "textures": {
+    "statue": {
+      "name": "statue",
+      "w": 117,
+      "h": 320
+    },
+    "temple_wall": {
+      "name": "temple_wall",
+      "w": 168,
+      "h": 224
+    },
+    "statue_cat": {
+      "name": "statue_cat",
+      "w": 122,
+      "h": 192
+    },
+    "stone_floor": {
+      "name": "stone_floor",
+      "w": 128,
+      "h": 128
+    },
+    "statue_back": {
+      "name": "statue_back",
+      "w": 133,
+      "h": 317
+    },
+    "statue_anubi": {
+      "name": "statue_anubi",
+      "w": 161,
+      "h": 320
+    },
+    "brazier": {
+      "name": "brazier",
+      "w": 99,
+      "h": 72
+    },
+    "torch": {
+      "name": "torch",
+      "w": 18,
+      "h": 48
+    },
+    "fragments2": {
+      "name": "fragments2",
+      "w": 112,
+      "h": 64
+    },
+    "statue_anubi_back": {
+      "name": "statue_anubi_back",
+      "w": 163,
+      "h": 320
+    },
+    "Torch Animated": {
+      "name": "Torch Animated",
+      "w": 288,
+      "h": 48,
+      "frameWidth": 36,
+      "frameHeight": 48,
+      "frameRate": 10
+    },
+    "broken_statue": {
+      "name": "broken_statue",
+      "w": 320,
+      "h": 150
+    },
+    "broken_statue_base": {
+      "name": "broken_statue_base",
+      "w": 160,
+      "h": 250
+    },
+    "broken_anubi_statue": {
+      "name": "broken_anubi_statue",
+      "w": 128,
+      "h": 126
+    },
+    "jar1": {
+      "name": "jar1",
+      "w": 32,
+      "h": 48
+    },
+    "fragments1": {
+      "name": "fragments1",
+      "w": 138,
+      "h": 66
+    },
+    "jar2.": {
+      "name": "jar2.",
+      "w": 35,
+      "h": 54
+    },
+    "darts": {
+      "name": "darts",
+      "w": 359,
+      "h": 45
+    },
+    "jar3": {
+      "name": "jar3",
+      "w": 31,
+      "h": 50
+    },
+    "scroll": {
+      "name": "scroll",
+      "w": 32,
+      "h": 26
+    }
+  }
+}

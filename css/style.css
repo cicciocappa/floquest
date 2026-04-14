@@ -1,0 +1,248 @@
+@font-face {
+    font-family: 'VCR';
+    src: url('../VCR_OSD_MONO_1.001.ttf') format('truetype');
+    font-display: block;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 1024px;
+    max-height: 100vh;
+}
+
+#game-container canvas {
+    display: block;
+    position: relative;
+    z-index: 1;
+}
+
+/* =============================================================
+   Question Panel — HTML overlay above the Phaser canvas
+   ============================================================= */
+
+#question-panel {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    /* Width switches between these two via JS class .has-picture */
+    --qp-width-no-pic: 560px;
+    --qp-width-pic: 860px;
+    width: var(--qp-width-no-pic);
+    background: rgba(0, 0, 0, 0.82);
+    border: 1px solid rgba(201, 168, 76, 0.4);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    font-family: monospace;
+    user-select: none;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+}
+
+#question-panel.has-picture {
+    width: var(--qp-width-pic);
+}
+
+/* --- Picture column (optional) --- */
+.qp-picture-col {
+    display: none;
+    flex-shrink: 0;
+    --qp-picture-size: 200px;
+    width: var(--qp-picture-size);
+    min-height: var(--qp-picture-size);
+    padding: 10px;
+    border-right: 1px solid rgba(201, 168, 76, 0.25);
+}
+
+#question-panel.has-picture .qp-picture-col {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qp-picture-col img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid rgba(201, 168, 76, 0.3);
+}
+
+/* --- Main column (question + answers) --- */
+.qp-main-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 10px 14px;
+    min-width: 0;
+}
+
+/* Header row */
+.qp-header {
+    font-size: 12px;
+    color: #8888aa;
+    margin-bottom: 6px;
+    text-align: center;
+}
+
+/* Question text */
+.qp-question {
+    font-size: 16px;
+    color: #ffffff;
+    text-align: center;
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+/* Answers 2x2 grid */
+.qp-answers {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+
+.qp-answer {
+    font-size: 13px;
+    color: #8899bb;
+    text-align: center;
+    padding: 5px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: color 0.12s, background 0.12s;
+    line-height: 1.3;
+}
+
+.qp-answer.hover {
+    color: #bbccee;
+}
+
+.qp-answer.selected {
+    color: #ffcc44;
+    background: rgba(255, 204, 68, 0.08);
+}
+
+/* --- Info column (timer, score, lives) --- */
+.qp-info-col {
+    flex-shrink: 0;
+    --qp-info-width: 70px;
+    width: var(--qp-info-width);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 8px;
+    border-left: 1px solid rgba(201, 168, 76, 0.25);
+}
+
+.qp-timer {
+    font-size: 22px;
+    color: #ffffff;
+    font-weight: bold;
+    text-align: center;
+}
+.qp-timer.warn  { color: #ffaa44; }
+.qp-timer.danger { color: #ff4444; }
+
+.qp-score {
+    font-size: 12px;
+    color: #c9a84c;
+    text-align: center;
+    line-height: 1.2;
+}
+
+.qp-score .qp-score-value {
+    font-size: 16px;
+    font-weight: bold;
+    display: block;
+}
+
+.qp-lives {
+    font-size: 18px;
+    color: #ff4444;
+    letter-spacing: 2px;
+    text-align: center;
+}
+
+/* =============================================================
+   Level Intro Panel
+   ============================================================= */
+
+#intro-panel {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    --intro-width: 560px;
+    width: var(--intro-width);
+    background: rgba(0, 0, 0, 0.85);
+    border: 1px solid rgba(201, 168, 76, 0.4);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    font-family: monospace;
+    user-select: none;
+    padding: 18px 24px 16px;
+    text-align: center;
+}
+
+.intro-level-name {
+    font-size: 20px;
+    font-weight: bold;
+    color: #c9a84c;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+}
+
+.intro-level-theme {
+    font-size: 12px;
+    color: #8888aa;
+    margin-bottom: 12px;
+}
+
+.intro-narration {
+    font-size: 14px;
+    color: #ccccdd;
+    line-height: 1.6;
+    margin-bottom: 16px;
+    text-align: left;
+}
+
+.intro-start-btn {
+    display: inline-block;
+    font-family: monospace;
+    font-size: 16px;
+    font-weight: bold;
+    color: #1a1a2e;
+    background: #c9a84c;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 36px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: background 0.15s;
+}
+
+.intro-start-btn:hover {
+    background: #ddb85c;
+}

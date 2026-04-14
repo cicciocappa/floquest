@@ -1,0 +1,85 @@
+[
+  {
+    "name": "statue",
+    "path": "statue.png"
+  },
+  {
+    "name": "temple_wall",
+    "path": "temple_wall.png"
+  },
+  {
+    "name": "statue_cat",
+    "path": "statue_cat.png"
+  },
+  {
+    "name": "stone_floor",
+    "path": "stone_floor.png"
+  },
+  {
+    "name": "statue_back",
+    "path": "statue_back.png"
+  },
+  {
+    "name": "statue_anubi",
+    "path": "statue_anubi.png"
+  },
+  {
+    "name": "Torch Animated",
+    "path": "Torch Animated.png",
+    "frameWidth": 36,
+    "frameHeight": 48,
+    "frameRate": 10
+  },
+  {
+    "name": "statue_anubi_back",
+    "path": "statue_anubi_back.png"
+  },
+  {
+    "name": "torch",
+    "path": "torch.png"
+  },
+  {
+    "name": "brazier",
+    "path": "brazier.png"
+  },
+  {
+    "name": "broken_statue",
+    "path": "broken_statue.png"
+  },
+  {
+    "name": "fragments2",
+    "path": "fragments2.png"
+  },
+  {
+    "name": "broken_statue_base",
+    "path": "broken_statue_base.png"
+  },
+  {
+    "name": "broken_anubi_statue",
+    "path": "broken_anubi_statue.png"
+  },
+  {
+    "name": "fragments1",
+    "path": "fragments1.png"
+  },
+  {
+    "name": "jar2.",
+    "path": "jar2..png"
+  },
+  {
+    "name": "jar1",
+    "path": "jar1.png"
+  },
+  {
+    "name": "darts",
+    "path": "darts.png"
+  },
+  {
+    "name": "jar3",
+    "path": "jar3.png"
+  },
+  {
+    "name": "scroll",
+    "path": "scroll.png"
+  }
+]

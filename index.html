@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FloQuest - L'Avventura del Sapere</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="game-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+
+    <!-- Config (loaded first, used by other modules at init time) -->
+    <script src="js/config.js"></script>
+
+    <!-- Utils -->
+    <script src="js/utils/TextureGenerator.js"></script>
+    <script src="js/utils/AudioManager.js"></script>
+    <script src="js/utils/FMSynth.js"></script>
+    <script src="js/utils/MusicPlayer.js"></script>
+    <script src="js/utils/ScoreManager.js"></script>
+    <script src="js/utils/ParticleFactory.js"></script>
+    <script src="js/utils/LightPipeline.js"></script>
+
+    <!-- Data -->
+    <script src="js/data/levels.js"></script>
+    <script src="js/data/questions.js"></script>
+
+    <!-- Objects -->
+    <script src="js/objects/Player.js"></script>
+    <script src="js/objects/CorridorSystem.js"></script>
+    <script src="js/objects/QuestionUI.js"></script>
+    <script src="js/objects/LevelBackground.js"></script>
+    <script src="js/objects/Environment.js"></script>
+    <script src="js/objects/TrapEffect.js"></script>
+
+    <!-- Scenes -->
+    <script src="js/scenes/BootScene.js"></script>
+    <script src="js/scenes/TitleScene.js"></script>
+    <script src="js/scenes/JourneySelectScene.js"></script>
+    <script src="js/scenes/OptionsScene.js"></script>
+    <script src="js/scenes/RecordsScene.js"></script>
+    <script src="js/scenes/LevelIntroScene.js"></script>
+    <script src="js/scenes/GameScene.js"></script>
+    <script src="js/scenes/LevelCompleteScene.js"></script>
+    <script src="js/scenes/GameOverScene.js"></script>
+    <script src="js/scenes/VictoryScene.js"></script>
+
+    <!-- Main -->
+    <script src="js/main.js"></script>
+</body>
+</html>

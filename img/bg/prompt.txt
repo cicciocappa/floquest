@@ -1,0 +1,8 @@
+prompt statue: 
+egyptian stone statue, SUBJECT, standing pose, carved sandstone, ancient temple, pixel art style, high color pixel art, 16-bit color palette, detailed shading, warm torchlight, dark background, game sprite, side view
+
+neg: 
+blurry, photo, 3d render, text, watermark, modern, smooth gradients, vector art, anti-aliasing
+
+
+

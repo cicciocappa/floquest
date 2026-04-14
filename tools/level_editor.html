@@ -1,0 +1,2472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FloQuest — Level Editor</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a2e; color: #ccc; font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px; display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+    user-select: none;
+  }
+
+  /* ---- TOOLBAR ---- */
+  #toolbar {
+    display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+    background: #16213e; border-bottom: 1px solid #0f3460; flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  #toolbar button {
+    background: #0f3460; color: #a8b8d8; border: 1px solid #1a4080;
+    padding: 4px 12px; font-size: 12px; cursor: pointer; border-radius: 3px;
+  }
+  #toolbar button:hover { background: #1a4080; color: #fff; }
+  #toolbar button.active { background: #e94560; color: #fff; border-color: #e94560; }
+  #toolbar .sep { width: 1px; height: 24px; background: #0f3460; margin: 0 4px; }
+  #toolbar label { color: #7a8aaa; font-size: 11px; }
+  #toolbar input[type=number] {
+    width: 55px; background: #0a0a1a; color: #aac; border: 1px solid #1a4080;
+    padding: 2px 4px; font-size: 12px; border-radius: 2px;
+  }
+  #toolbar select {
+    background: #0a0a1a; color: #aac; border: 1px solid #1a4080;
+    padding: 2px 4px; font-size: 12px; border-radius: 2px;
+  }
+
+  /* ---- MAIN AREA ---- */
+  #main {
+    display: flex; flex: 1; overflow: hidden;
+  }
+
+  /* ---- LEFT PANEL: TEXTURES ---- */
+  #texPanel {
+    width: 200px; background: #111827; border-right: 1px solid #0f3460;
+    display: flex; flex-direction: column; flex-shrink: 0;
+  }
+  #texPanel h3 {
+    padding: 8px; font-size: 12px; color: #5a7aaa; border-bottom: 1px solid #1a2a4a;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  #texList {
+    flex: 1; overflow-y: auto; padding: 4px;
+  }
+  .tex-item {
+    display: flex; align-items: center; gap: 6px; padding: 4px 6px;
+    cursor: pointer; border-radius: 3px; margin-bottom: 2px;
+  }
+  .tex-item:hover { background: #1a2a4a; }
+  .tex-item.selected { background: #0f3460; }
+  .tex-item canvas { border: 1px solid #333; flex-shrink: 0; }
+  .tex-item span { font-size: 11px; color: #8899bb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #texDropZone {
+    padding: 12px; text-align: center; color: #446; font-size: 11px;
+    border: 2px dashed #1a2a4a; margin: 8px; border-radius: 4px;
+  }
+  #texDropZone:hover { border-color: #3a5a8a; color: #668; }
+
+  /* ---- CANVAS AREA ---- */
+  #canvasArea {
+    flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden;
+  }
+  #viewport {
+    flex: 1; overflow: hidden; cursor: default; position: relative;
+  }
+  #viewport canvas { position: absolute; top: 0; left: 0; }
+
+  /* ---- MINIMAP ---- */
+  #minimap {
+    height: 60px; background: #0a0a16; border-top: 1px solid #0f3460;
+    position: relative; cursor: pointer; flex-shrink: 0;
+  }
+  #minimap canvas { width: 100%; height: 100%; }
+
+  /* ---- RIGHT PANEL: PROPERTIES ---- */
+  #propPanel {
+    width: 220px; background: #111827; border-left: 1px solid #0f3460;
+    display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto;
+  }
+  #propPanel h3 {
+    padding: 8px; font-size: 12px; color: #5a7aaa; border-bottom: 1px solid #1a2a4a;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  #propContent { padding: 8px; }
+  .prop-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .prop-row label { font-size: 11px; color: #7a8aaa; }
+  .prop-row input, .prop-row select {
+    width: 90px; background: #0a0a1a; color: #aac; border: 1px solid #1a4080;
+    padding: 2px 4px; font-size: 12px; border-radius: 2px;
+  }
+  .prop-row input[type=checkbox] { width: auto; }
+
+  /* ---- ALIGN BUTTONS ---- */
+  .align-btn {
+    background: #0f3460; color: #a8b8d8; border: 1px solid #1a4080;
+    padding: 4px 2px; font-size: 11px; cursor: pointer; border-radius: 3px;
+    text-align: center;
+  }
+  .align-btn:hover { background: #1a4080; color: #fff; }
+  .prop-section-title {
+    font-size: 11px; color: #5a7aaa; margin: 8px 0 6px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+
+  /* ---- STATUS BAR ---- */
+  #statusBar {
+    padding: 3px 12px; background: #0a0f1e; border-top: 1px solid #0f3460;
+    font-size: 11px; color: #556; display: flex; justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #111; }
+  ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- TOOLBAR -->
+<div id="toolbar">
+  <button id="btnSelect" class="active" title="Select / Move (V)">Select</button>
+  <button id="btnRect" title="Draw tiled rectangle (R)">Tiled Rect</button>
+  <button id="btnSprite" title="Place sprite (S)">Sprite</button>
+  <button id="btnLight" title="Place light (L)">Light</button>
+  <div class="sep"></div>
+  <button id="btnCopy" title="Copy (Ctrl+C)">Copy</button>
+  <button id="btnPaste" title="Paste (Ctrl+V)">Paste</button>
+  <button id="btnDelete" title="Delete (Del)">Delete</button>
+  <button id="btnHide" title="Hide selected (H)">Hide</button>
+  <button id="btnShowAll" title="Show all hidden">Show All</button>
+  <button id="btnToTop" title="Bring to top within layer (])">&#x2191; Top</button>
+  <button id="btnToBottom" title="Push to bottom within layer ([)">&#x2193; Bottom</button>
+  <div class="sep"></div>
+  <label>Sky H:</label>
+  <input type="number" id="inpSkyH" value="224" min="0" max="600" step="8">
+  <div class="sep"></div>
+  <label>Layer:</label>
+  <select id="selLayer">
+    <option value="0">0 — Background</option>
+    <option value="1">1 — Behind all</option>
+    <option value="2">2 — Behind C2-C4</option>
+    <option value="3" selected>3 — Behind C3-C4</option>
+    <option value="4">4 — Behind C4</option>
+    <option value="5">5 — Foreground</option>
+  </select>
+  <div class="sep"></div>
+  <button id="btnGuides" class="active" title="Toggle guides">Guides</button>
+  <div class="sep"></div>
+  <button id="btnPreview" title="Phaser preview with lighting (F5)">Preview</button>
+  <button id="btnExport" title="Export level layout JSON">Export</button>
+  <button id="btnImport" title="Import level layout JSON">Import</button>
+  <input type="file" id="fileImport" accept=".json" style="display:none">
+  <div class="sep"></div>
+  <button id="btnSaveTex" title="Save texture catalog to textures.json">Save Textures</button>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- LEFT: Textures -->
+  <div id="texPanel">
+    <h3 style="display:flex;justify-content:space-between;align-items:center;">
+      Textures
+      <button id="btnReloadTex" title="Reload all textures from disk" style="background:#0f3460;color:#a8b8d8;border:1px solid #1a4080;padding:2px 8px;font-size:10px;cursor:pointer;border-radius:2px;">Reload</button>
+    </h3>
+    <div id="texList"></div>
+    <div id="texAnimProps" style="display:none; padding:6px; background:#0a1a30; border:1px solid #1a3060; margin:4px 0; font-size:11px;">
+      <div style="color:#88aacc; margin-bottom:4px; font-weight:bold;">Spritesheet</div>
+      <div class="prop-row"><label>Frame W</label><input type="number" id="texFW" min="1" step="1" style="width:60px;"></div>
+      <div class="prop-row"><label>Frame H</label><input type="number" id="texFH" min="1" step="1" style="width:60px;"></div>
+      <div class="prop-row"><label>FPS</label><input type="number" id="texFPS" value="10" min="1" max="60" step="1" style="width:60px;"></div>
+      <div class="prop-row"><label>Frames</label><span id="texFrameCount" style="color:#aac;">—</span></div>
+    </div>
+    <div id="texDropZone">Drop images here<br>or click to load</div>
+    <input type="file" id="texFileInput" accept="image/*" multiple style="display:none">
+  </div>
+
+  <!-- CENTER: Canvas -->
+  <div id="canvasArea">
+    <div id="viewport">
+      <canvas id="cvs"></canvas>
+    </div>
+    <div id="minimap">
+      <canvas id="minimapCvs"></canvas>
+    </div>
+  </div>
+
+  <!-- RIGHT: Properties -->
+  <div id="propPanel">
+    <h3>Properties</h3>
+    <div id="propContent">
+      <p style="color:#446; font-size:11px;">Select an element</p>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS -->
+<div id="statusBar">
+  <span id="statusLeft">Ready</span>
+  <span id="statusRight">Zoom: 100%</span>
+</div>
+
+<script>
+// =====================================================================
+// CONSTANTS
+// =====================================================================
+const TILE_INTRO = 500;
+const TILE_QUESTION = 2138;
+const NUM_QUESTIONS = 10;
+const CANVAS_W = TILE_INTRO + TILE_QUESTION * NUM_QUESTIONS; // 21880
+const CANVAS_H = 960;
+
+// Corridor calculation (mirrors prototype)
+const WALK_RIGHT_PX = 100;
+
+// =====================================================================
+// TEXTURE CATALOG — loaded from img/bg/textures.json at startup
+// =====================================================================
+const TEX_CATALOG_URL = '../img/bg/textures.json';
+const TEX_BASE_PATH = '../img/bg/';
+let texCatalogHandle = null; // File System Access API handle for saving
+
+// =====================================================================
+// STATE
+// =====================================================================
+const state = {
+  tool: 'select',        // select | rect | sprite
+  zoom: 0.15,
+  panX: 0,
+  panY: 0,
+  skyHeight: 224,
+  showGuides: true,
+  // Level lighting config
+  ambientColor: '#0a0a10',
+  lightMultiplier: 1.0,
+  playerLight: false,        // whether player has its own light
+  playerLightIntensity: 1.0,
+  playerLightRadius: 400,
+  playerLightColor: '#fff2dd',
+  elements: [],          // { id, type, x, y, w, h, texId, layer, tile, tint?, groupId? }
+  textures: {},          // texId -> { img, name, w, h }
+  groups: {},            // groupId -> { name }
+  selectedIds: new Set(),
+  primarySelectedId: null,   // which element shows in properties panel (within group selection)
+  clipboard: null,
+  nextId: 1,
+  nextGroupId: 1,
+  history: [],
+  historyIndex: -1,
+  dragging: null,        // { mode, startX, startY, origPositions }
+  drawStart: null,       // { x, y } for rect drawing
+  rubberBand: null,      // { x, y, w, h } in world coords for box selection
+  selectedTexId: null,
+};
+
+// =====================================================================
+// UNDO / REDO
+// =====================================================================
+const MAX_HISTORY = 80;
+
+function captureSnapshot() {
+  return {
+    elements: JSON.parse(JSON.stringify(state.elements)),
+    groups: JSON.parse(JSON.stringify(state.groups)),
+    skyHeight: state.skyHeight,
+    nextId: state.nextId,
+    nextGroupId: state.nextGroupId,
+    ambientColor: state.ambientColor,
+    lightMultiplier: state.lightMultiplier,
+    playerLight: state.playerLight,
+    playerLightIntensity: state.playerLightIntensity,
+    playerLightRadius: state.playerLightRadius,
+    playerLightColor: state.playerLightColor,
+  };
+}
+
+function restoreSnapshot(snap) {
+  state.elements = JSON.parse(JSON.stringify(snap.elements));
+  state.groups = JSON.parse(JSON.stringify(snap.groups));
+  state.skyHeight = snap.skyHeight;
+  state.nextId = snap.nextId;
+  state.nextGroupId = snap.nextGroupId;
+  state.ambientColor = snap.ambientColor;
+  state.lightMultiplier = snap.lightMultiplier;
+  state.playerLight = snap.playerLight;
+  state.playerLightIntensity = snap.playerLightIntensity;
+  state.playerLightRadius = snap.playerLightRadius;
+  state.playerLightColor = snap.playerLightColor;
+  document.getElementById('inpSkyH').value = state.skyHeight;
+  state.selectedIds.clear();
+  updateProperties();
+  render();
+}
+
+function pushHistory() {
+  // Discard any redo states ahead of current index
+  state.history.splice(state.historyIndex + 1);
+  state.history.push(captureSnapshot());
+  if (state.history.length > MAX_HISTORY) state.history.shift();
+  state.historyIndex = state.history.length - 1;
+}
+
+function undo() {
+  if (state.historyIndex <= 0) return;
+  state.historyIndex--;
+  restoreSnapshot(state.history[state.historyIndex]);
+}
+
+function redo() {
+  if (state.historyIndex >= state.history.length - 1) return;
+  state.historyIndex++;
+  restoreSnapshot(state.history[state.historyIndex]);
+}
+
+// =====================================================================
+// CORRIDOR GEOMETRY (parameterized by skyHeight)
+// =====================================================================
+function getCorridors(skyH) {
+  const floorH = CANVAS_H - skyH;
+  const laneH = floorH / 4;
+  const corridors = [];
+  for (let i = 0; i < 4; i++) {
+    corridors.push({
+      y: skyH + laneH * (i + 0.5),
+      laneTop: skyH + laneH * i,
+      laneH: laneH,
+    });
+  }
+  const centerY = skyH + floorH / 2;
+  return { corridors, centerY, floorH, laneH, floorTop: skyH };
+}
+
+// Trajectory points for one question tile (relative to tile start)
+function calcTrajectory(skyH, corridorIndex) {
+  const { corridors, centerY } = getCorridors(skyH);
+  const c = corridors[corridorIndex];
+
+  // Angles and approach cycles per corridor type
+  const isOuter = (corridorIndex === 0 || corridorIndex === 3);
+  const angle = isOuter ? 60 : 45;
+  const approachCycles = isOuter ? 2 : 1;
+
+  const targetDy = c.y - centerY;
+  const totalDiagFrames = 30 + 30 * approachCycles + 30;
+  const dyPerFrame = targetDy / totalDiagFrames;
+  const angleRad = (angle * Math.PI) / 180;
+  const dxPerFrame = Math.abs(dyPerFrame) / Math.tan(angleRad);
+  const totalDiagDx = dxPerFrame * totalDiagFrames;
+
+  return { totalDiagDx, approachCycles, targetY: c.y, centerY, angle };
+}
+
+function getMaxDiagRoundtrip(skyH) {
+  let max = 0;
+  for (let i = 0; i < 4; i++) {
+    const t = calcTrajectory(skyH, i);
+    max = Math.max(max, t.totalDiagDx * 2);
+  }
+  return max;
+}
+
+// Full trajectory path for one question (returns array of {x, y} waypoints)
+function getQuestionTrajectory(skyH, corridorIndex) {
+  const { corridors, centerY } = getCorridors(skyH);
+  const traj = calcTrajectory(skyH, corridorIndex);
+  const maxRt = getMaxDiagRoundtrip(skyH);
+  const comp = maxRt - traj.totalDiagDx * 2;
+  const compHalf = comp / 2;
+
+  // Walk cycles for question decision phase
+  const WALK_CYCLES_QUESTION = 12;
+  const WALK_CYCLES_PRE = 3; // average
+
+  const points = [];
+  let x = 0;
+  const cy = centerY;
+  const ty = traj.targetY;
+
+  // B.1 — Walk right (decision time)
+  points.push({ x, y: cy, label: 'Q start' });
+  x += WALK_RIGHT_PX * WALK_CYCLES_QUESTION;
+
+  // B.2 — Extra walk + diagonal to corridor
+  x += WALK_RIGHT_PX; // 1 cycle before diagonal
+  points.push({ x, y: cy, label: 'diag start' });
+  x += traj.totalDiagDx;
+  points.push({ x, y: ty, label: 'in corridor' });
+
+  // B.3+B.4 — Corridor traverse (suspense + safe passage + compensation)
+  x += WALK_RIGHT_PX * 4 + comp;
+  points.push({ x, y: ty, label: 'return start' });
+
+  // B.5 — Return diagonal
+  x += traj.totalDiagDx;
+  points.push({ x, y: cy, label: 'back center' });
+
+  return points;
+}
+
+// =====================================================================
+// CANVAS / RENDERING
+// =====================================================================
+const cvs = document.getElementById('cvs');
+const ctx = cvs.getContext('2d');
+const minimapCvs = document.getElementById('minimapCvs');
+const mctx = minimapCvs.getContext('2d');
+const viewport = document.getElementById('viewport');
+
+function resize() {
+  const rect = viewport.getBoundingClientRect();
+  cvs.width = rect.width;
+  cvs.height = rect.height;
+
+  const mrect = document.getElementById('minimap').getBoundingClientRect();
+  minimapCvs.width = mrect.width;
+  minimapCvs.height = mrect.height;
+
+  render();
+}
+
+function worldToScreen(wx, wy) {
+  return {
+    x: (wx - state.panX) * state.zoom,
+    y: (wy - state.panY) * state.zoom
+  };
+}
+
+function screenToWorld(sx, sy) {
+  return {
+    x: sx / state.zoom + state.panX,
+    y: sy / state.zoom + state.panY
+  };
+}
+
+function render() {
+  const w = cvs.width, h = cvs.height;
+  ctx.clearRect(0, 0, w, h);
+
+  ctx.save();
+  ctx.scale(state.zoom, state.zoom);
+  ctx.translate(-state.panX, -state.panY);
+
+  // Background
+  ctx.fillStyle = '#0d0d18';
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  // Sky area
+  if (state.skyHeight > 0) {
+    ctx.fillStyle = '#12121f';
+    ctx.fillRect(0, 0, CANVAS_W, state.skyHeight);
+  }
+
+  // Floor lanes
+  const { corridors, centerY, laneH, floorTop } = getCorridors(state.skyHeight);
+  const laneColors = ['#141420', '#111120', '#141420', '#111120'];
+  corridors.forEach((c, i) => {
+    ctx.fillStyle = laneColors[i];
+    ctx.fillRect(0, c.laneTop, CANVAS_W, laneH);
+  });
+
+  // Render elements sorted by layer (lights last, on top), skip hidden
+  const sorted = state.elements.filter(e => !e.hidden).sort((a, b) => {
+    if (a.type === 'light' && b.type !== 'light') return 1;
+    if (a.type !== 'light' && b.type === 'light') return -1;
+    return a.layer - b.layer;
+  });
+  // Group color palette for visual indicators
+  const groupColors = ['#44aaff', '#ff8844', '#44ff88', '#ff44aa', '#aaff44', '#aa44ff', '#44ffdd', '#ffdd44'];
+  const groupColorMap = {};
+  let gcIdx = 0;
+  Object.keys(state.groups).forEach(gid => {
+    groupColorMap[gid] = groupColors[gcIdx++ % groupColors.length];
+  });
+
+  sorted.forEach(el => {
+    const isSel = state.selectedIds.has(el.id);
+    if (el.type === 'light') {
+      renderLight(ctx, el, isSel);
+    } else {
+      renderElement(ctx, el);
+      // Group indicator: thin colored border
+      if (el.groupId && groupColorMap[String(el.groupId)]) {
+        ctx.strokeStyle = groupColorMap[String(el.groupId)] + '60';
+        ctx.lineWidth = 2 / state.zoom;
+        ctx.strokeRect(el.x, el.y, el.w, el.h);
+      }
+      // Trap indicator: orange dashed border + small "T" label
+      if (el.trap) {
+        ctx.strokeStyle = '#ff880088';
+        ctx.lineWidth = 2 / state.zoom;
+        ctx.setLineDash([3 / state.zoom, 3 / state.zoom]);
+        ctx.strokeRect(el.x, el.y, el.w, el.h);
+        ctx.setLineDash([]);
+        var ts = 10 / state.zoom;
+        ctx.fillStyle = '#ff8800cc';
+        ctx.font = Math.round(ts) + 'px monospace';
+        ctx.fillText('T', el.x + 2 / state.zoom, el.y + ts + 1 / state.zoom);
+      }
+      if (isSel) {
+        const isPrimary = el.id === state.primarySelectedId && state.selectedIds.size > 1;
+        ctx.strokeStyle = isPrimary ? '#ffffff' : '#e94560';
+        ctx.lineWidth = (isPrimary ? 3 : 2) / state.zoom;
+        ctx.setLineDash([6 / state.zoom, 4 / state.zoom]);
+        ctx.strokeRect(el.x, el.y, el.w, el.h);
+        ctx.setLineDash([]);
+
+        // Resize handle (only for single selection)
+        if (state.selectedIds.size === 1) {
+          const hs = 8 / state.zoom;
+          ctx.fillStyle = '#e94560';
+          ctx.fillRect(el.x + el.w - hs, el.y + el.h - hs, hs, hs);
+        }
+      }
+    }
+  });
+
+  // Rubber band selection rect
+  if (state.rubberBand) {
+    const rb = state.rubberBand;
+    ctx.strokeStyle = '#4488ff';
+    ctx.fillStyle = '#4488ff18';
+    ctx.lineWidth = 1 / state.zoom;
+    ctx.setLineDash([4 / state.zoom]);
+    const rx = Math.min(rb.x, rb.x + rb.w);
+    const ry = Math.min(rb.y, rb.y + rb.h);
+    const rw = Math.abs(rb.w);
+    const rh = Math.abs(rb.h);
+    ctx.fillRect(rx, ry, rw, rh);
+    ctx.strokeRect(rx, ry, rw, rh);
+    ctx.setLineDash([]);
+  }
+
+  // Guides
+  if (state.showGuides) {
+    renderGuides(ctx);
+  }
+
+  // Draw rect preview
+  if (state.tool === 'rect' && state.drawStart) {
+    ctx.strokeStyle = '#4488ff';
+    ctx.lineWidth = 1 / state.zoom;
+    ctx.setLineDash([4 / state.zoom]);
+    const ds = state.drawStart;
+    ctx.strokeRect(ds.x, ds.y, ds.w || 0, ds.h || 0);
+    ctx.setLineDash([]);
+  }
+
+  ctx.restore();
+
+  // Tile boundaries overlay (screen space)
+  ctx.save();
+  ctx.strokeStyle = '#ffffff10';
+  ctx.setLineDash([4, 4]);
+  ctx.lineWidth = 1;
+  // Intro tile
+  const introEnd = worldToScreen(TILE_INTRO, 0);
+  ctx.beginPath();
+  ctx.moveTo(introEnd.x, 0);
+  ctx.lineTo(introEnd.x, h);
+  ctx.stroke();
+  // Question tiles
+  for (let i = 1; i <= NUM_QUESTIONS; i++) {
+    const tx = worldToScreen(TILE_INTRO + TILE_QUESTION * i, 0);
+    ctx.beginPath();
+    ctx.moveTo(tx.x, 0);
+    ctx.lineTo(tx.x, h);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  renderMinimap();
+  updateStatus();
+}
+
+function renderElement(c, el) {
+  const tex = state.textures[el.texId];
+  if (!tex) {
+    c.fillStyle = '#2a1a2a';
+    c.fillRect(el.x, el.y, el.w, el.h);
+    c.strokeStyle = '#553355';
+    c.lineWidth = 1;
+    c.strokeRect(el.x, el.y, el.w, el.h);
+    return;
+  }
+
+  const hasTransform = el.flipX || el.flipY || el.rotation;
+  if (hasTransform) {
+    c.save();
+    const cx = el.x + el.w / 2;
+    const cy = el.y + el.h / 2;
+    c.translate(cx, cy);
+    if (el.rotation) c.rotate(el.rotation * Math.PI / 180);
+    c.scale(el.flipX ? -1 : 1, el.flipY ? -1 : 1);
+    c.translate(-cx, -cy);
+  }
+
+  // Determine source rect (first frame for spritesheets, full image otherwise)
+  const srcX = 0, srcY = 0;
+  const srcW = tex.frameWidth || tex.img.naturalWidth;
+  const srcH = tex.frameHeight || tex.img.naturalHeight;
+
+  if (el.tile) {
+    c.save();
+    c.beginPath();
+    c.rect(el.x, el.y, el.w, el.h);
+    c.clip();
+    for (let ty = el.y; ty < el.y + el.h; ty += srcH) {
+      for (let tx = el.x; tx < el.x + el.w; tx += srcW) {
+        c.drawImage(tex.img, srcX, srcY, srcW, srcH, tx, ty, srcW, srcH);
+      }
+    }
+    c.restore();
+  } else {
+    c.drawImage(tex.img, srcX, srcY, srcW, srcH, el.x, el.y, el.w, el.h);
+  }
+
+  // Tint overlay
+  if (el.tint) {
+    c.save();
+    c.globalCompositeOperation = 'multiply';
+    c.fillStyle = el.tint;
+    c.fillRect(el.x, el.y, el.w, el.h);
+    c.restore();
+  }
+
+  if (hasTransform) c.restore();
+
+  // Spritesheet badge (outside transform so it stays readable)
+  if (tex.frameWidth) {
+    c.save();
+    c.font = (12 / (c.getTransform().a || 1)) + 'px monospace';
+    c.fillStyle = '#ff8844';
+    c.fillText('\u25B6', el.x + 2 / (c.getTransform().a || 1), el.y + 14 / (c.getTransform().a || 1));
+    c.restore();
+  }
+}
+
+function renderLight(c, el, selected) {
+  const color = el.lightColor || '#fff2dd';
+  const intensity = el.lightIntensity || 1.0;
+  const isDir = el.lightMode === 'directional';
+
+  // Parse hex color to rgb
+  const hex = color.replace('#', '');
+  const cr = parseInt(hex.substring(0, 2), 16) || 255;
+  const cg = parseInt(hex.substring(2, 4), 16) || 242;
+  const cb = parseInt(hex.substring(4, 6), 16) || 221;
+
+  const iconR = 10 / state.zoom;
+  const selColor = '#e94560';
+
+  if (isDir) {
+    // --- DIRECTIONAL LIGHT ---
+    // Icon: diamond shape
+    const d = iconR * 1.2;
+    c.fillStyle = selected ? selColor : `rgba(${cr},${cg},${cb},0.9)`;
+    c.beginPath();
+    c.moveTo(el.x, el.y - d);
+    c.lineTo(el.x + d, el.y);
+    c.lineTo(el.x, el.y + d);
+    c.lineTo(el.x - d, el.y);
+    c.closePath();
+    c.fill();
+
+    // Direction arrow
+    const dx = el.lightDirX || 0.3;
+    const dy = el.lightDirY || -0.7;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    const arrowLen = 60 / state.zoom;
+    const ax = (dx / len) * arrowLen;
+    const ay = (dy / len) * arrowLen;
+
+    c.strokeStyle = selected ? selColor : `rgba(${cr},${cg},${cb},0.7)`;
+    c.lineWidth = 2 / state.zoom;
+    c.beginPath();
+    c.moveTo(el.x, el.y);
+    c.lineTo(el.x + ax, el.y + ay);
+    c.stroke();
+
+    // Arrowhead
+    const headLen = 10 / state.zoom;
+    const angle = Math.atan2(ay, ax);
+    c.beginPath();
+    c.moveTo(el.x + ax, el.y + ay);
+    c.lineTo(el.x + ax - headLen * Math.cos(angle - 0.4), el.y + ay - headLen * Math.sin(angle - 0.4));
+    c.moveTo(el.x + ax, el.y + ay);
+    c.lineTo(el.x + ax - headLen * Math.cos(angle + 0.4), el.y + ay - headLen * Math.sin(angle + 0.4));
+    c.stroke();
+
+    // Label
+    c.fillStyle = '#ffffff40';
+    c.font = (10 / state.zoom) + 'px monospace';
+    c.fillText('DIR I:' + intensity.toFixed(1), el.x + iconR + 4 / state.zoom, el.y - 4 / state.zoom);
+
+  } else {
+    // --- POINT LIGHT ---
+    const r = el.lightRadius || 400;
+
+    // Radial gradient for light radius preview
+    c.save();
+    c.globalCompositeOperation = 'lighter';
+    const grad = c.createRadialGradient(el.x, el.y, 0, el.x, el.y, r);
+    const a = Math.min(0.35, intensity * 0.15);
+    grad.addColorStop(0, `rgba(${cr},${cg},${cb},${a})`);
+    grad.addColorStop(0.5, `rgba(${cr},${cg},${cb},${a * 0.4})`);
+    grad.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
+    c.fillStyle = grad;
+    c.beginPath();
+    c.arc(el.x, el.y, r, 0, Math.PI * 2);
+    c.fill();
+    c.restore();
+
+    // Icon: circle with crosshair
+    c.fillStyle = selected ? selColor : `rgba(${cr},${cg},${cb},0.9)`;
+    c.beginPath();
+    c.arc(el.x, el.y, iconR, 0, Math.PI * 2);
+    c.fill();
+
+    // Crosshair
+    const ch = 16 / state.zoom;
+    c.strokeStyle = selected ? selColor : `rgba(${cr},${cg},${cb},0.5)`;
+    c.lineWidth = 1 / state.zoom;
+    c.beginPath();
+    c.moveTo(el.x - ch, el.y); c.lineTo(el.x + ch, el.y);
+    c.moveTo(el.x, el.y - ch); c.lineTo(el.x, el.y + ch);
+    c.stroke();
+
+    // Radius circle outline
+    c.strokeStyle = selected ? selColor + '80' : `rgba(${cr},${cg},${cb},0.15)`;
+    c.lineWidth = 1 / state.zoom;
+    c.setLineDash([6 / state.zoom, 4 / state.zoom]);
+    c.beginPath();
+    c.arc(el.x, el.y, r, 0, Math.PI * 2);
+    c.stroke();
+    c.setLineDash([]);
+
+    // Label
+    c.fillStyle = '#ffffff40';
+    c.font = (10 / state.zoom) + 'px monospace';
+    c.fillText('R:' + r + ' I:' + intensity.toFixed(1), el.x + iconR + 4 / state.zoom, el.y - 4 / state.zoom);
+  }
+}
+
+function renderGuides(c) {
+  const { corridors, centerY } = getCorridors(state.skyHeight);
+
+  // Sky line
+  if (state.skyHeight > 0) {
+    c.strokeStyle = '#4466aa30';
+    c.lineWidth = 1;
+    c.setLineDash([8, 4]);
+    c.beginPath();
+    c.moveTo(0, state.skyHeight);
+    c.lineTo(CANVAS_W, state.skyHeight);
+    c.stroke();
+    c.setLineDash([]);
+
+    c.fillStyle = '#4466aa40';
+    c.font = '12px monospace';
+    c.fillText('SKY: ' + state.skyHeight + 'px', 8, state.skyHeight - 4);
+  }
+
+  // Center line
+  c.strokeStyle = '#88aa4440';
+  c.lineWidth = 1;
+  c.beginPath();
+  c.moveTo(0, centerY);
+  c.lineTo(CANVAS_W, centerY);
+  c.stroke();
+
+  // Corridor center lines
+  const cColors = ['#ff444430', '#44aaff30', '#44ff8830', '#ffaa4430'];
+  corridors.forEach((cor, i) => {
+    c.strokeStyle = cColors[i];
+    c.lineWidth = 1;
+    c.setLineDash([4, 8]);
+    c.beginPath();
+    c.moveTo(0, cor.y);
+    c.lineTo(CANVAS_W, cor.y);
+    c.stroke();
+    c.setLineDash([]);
+  });
+
+  // Trajectories for all 4 corridors across all questions
+  const trajColors = ['#ff4444', '#4488ff', '#44ff88', '#ffaa44'];
+  for (let ci = 0; ci < 4; ci++) {
+    c.strokeStyle = trajColors[ci] + '60';
+    c.lineWidth = 2;
+
+    for (let q = 0; q < NUM_QUESTIONS; q++) {
+      const baseX = TILE_INTRO + TILE_QUESTION * q;
+      const pts = getQuestionTrajectory(state.skyHeight, ci);
+
+      c.beginPath();
+      pts.forEach((p, j) => {
+        const sx = baseX + p.x;
+        if (j === 0) c.moveTo(sx, p.y);
+        else c.lineTo(sx, p.y);
+      });
+      c.stroke();
+    }
+  }
+
+  // Tile labels
+  c.fillStyle = '#ffffff20';
+  c.font = '14px monospace';
+  c.fillText('INTRO', 8, 20);
+  for (let i = 0; i < NUM_QUESTIONS; i++) {
+    c.fillText('Q' + (i + 1), TILE_INTRO + TILE_QUESTION * i + 8, 20);
+  }
+}
+
+function renderMinimap() {
+  const mw = minimapCvs.width, mh = minimapCvs.height;
+  mctx.clearRect(0, 0, mw, mh);
+
+  const scale = mw / CANVAS_W;
+  const sy = mh / CANVAS_H;
+
+  // Background
+  mctx.fillStyle = '#0a0a14';
+  mctx.fillRect(0, 0, mw, mh);
+
+  // Sky
+  if (state.skyHeight > 0) {
+    mctx.fillStyle = '#1a1a2a';
+    mctx.fillRect(0, 0, mw, state.skyHeight * sy);
+  }
+
+  // Elements
+  state.elements.forEach(el => {
+    const tex = state.textures[el.texId];
+    mctx.fillStyle = tex ? '#334' : '#2a1a2a';
+    mctx.fillRect(el.x * scale, el.y * sy, Math.max(1, el.w * scale), Math.max(1, el.h * sy));
+  });
+
+  // Viewport rect
+  const vx = state.panX * scale;
+  const vy = state.panY * sy;
+  const vw = (cvs.width / state.zoom) * scale;
+  const vh = (cvs.height / state.zoom) * sy;
+  mctx.strokeStyle = '#e94560';
+  mctx.lineWidth = 1.5;
+  mctx.strokeRect(vx, vy, vw, vh);
+}
+
+function updateStatus() {
+  const zoomPct = Math.round(state.zoom * 100);
+  document.getElementById('statusRight').textContent =
+    'Zoom: ' + zoomPct + '%  |  Canvas: ' + CANVAS_W + 'x' + CANVAS_H;
+  const hiddenCount = state.elements.filter(e => e.hidden).length;
+  document.getElementById('statusLeft').textContent =
+    'Elements: ' + state.elements.length +
+    (hiddenCount ? '  (' + hiddenCount + ' hidden)' : '') +
+    (state.selectedIds.size > 0 ? '  |  Selected: ' + state.selectedIds.size : '');
+}
+
+// =====================================================================
+// ELEMENT OPERATIONS
+// =====================================================================
+function addElement(type, x, y, w, h, texId, layer, tile) {
+  pushHistory();
+  const el = {
+    id: state.nextId++,
+    type, x: Math.round(x), y: Math.round(y),
+    w: Math.round(w), h: Math.round(h),
+    texId: texId || null,
+    layer: layer != null ? layer : parseInt(document.getElementById('selLayer').value),
+    tile: !!tile,
+  };
+  state.elements.push(el);
+  selectElement(el.id);
+  render();
+  return el;
+}
+
+function addLight(x, y) {
+  pushHistory();
+  const el = {
+    id: state.nextId++,
+    type: 'light',
+    x: Math.round(x), y: Math.round(y),
+    w: 0, h: 0,       // not used for lights
+    texId: null, layer: 10, tile: false,
+    // Light-specific properties
+    lightMode: 'point',     // 'point' or 'directional'
+    lightRadius: 400,       // point: range; directional: not used
+    lightColor: '#fff2dd',
+    lightIntensity: 1.8,
+    lightDirX: 0.3,         // directional: direction vector (normalized in shader)
+    lightDirY: -0.7,
+    lightDirZ: 0.5,
+  };
+  state.elements.push(el);
+  selectElement(el.id);
+  render();
+  return el;
+}
+
+function deleteSelected() {
+  if (state.selectedIds.size === 0) return;
+  pushHistory();
+  state.elements = state.elements.filter(e => !state.selectedIds.has(e.id));
+  state.selectedIds.clear();
+  cleanupEmptyGroups();
+  updateProperties();
+  render();
+}
+
+function copySelected() {
+  const selected = state.elements.filter(e => state.selectedIds.has(e.id));
+  if (selected.length > 0) state.clipboard = selected.map(e => ({ ...e }));
+}
+
+function pasteClipboard() {
+  if (!state.clipboard || state.clipboard.length === 0) return;
+  pushHistory();
+  state.selectedIds.clear();
+  state.clipboard.forEach(el => {
+    const newEl = {
+      id: state.nextId++,
+      type: el.type, x: Math.round(el.x + 50), y: Math.round(el.y + 50),
+      w: Math.round(el.w || 0), h: Math.round(el.h || 0),
+      texId: el.texId || null,
+      layer: el.layer != null ? el.layer : parseInt(document.getElementById('selLayer').value),
+      tile: !!el.tile,
+    };
+    if (el.type === 'light') {
+      newEl.lightMode = el.lightMode; newEl.lightRadius = el.lightRadius;
+      newEl.lightColor = el.lightColor; newEl.lightIntensity = el.lightIntensity;
+      newEl.lightDirX = el.lightDirX; newEl.lightDirY = el.lightDirY; newEl.lightDirZ = el.lightDirZ;
+    }
+    if (el.pick) newEl.pick = true;
+    if (el.trap) {
+      newEl.trap = true; newEl.trapAnimType = el.trapAnimType; newEl.trapHidden = el.trapHidden;
+      newEl.trapCorridor = el.trapCorridor; newEl.trapOffset = el.trapOffset ? [...el.trapOffset] : [0,0,0,0];
+      newEl.trapTween = el.trapTween ? el.trapTween.map(t => ({...t})) : [];
+      newEl.trapTweenDuration = el.trapTweenDuration; newEl.trapTweenEase = el.trapTweenEase;
+    }
+    state.elements.push(newEl);
+    state.selectedIds.add(newEl.id);
+  });
+  updateProperties();
+  render();
+}
+
+function hideSelected() {
+  if (state.selectedIds.size === 0) return;
+  pushHistory();
+  state.elements.forEach(el => {
+    if (state.selectedIds.has(el.id)) el.hidden = true;
+  });
+  state.selectedIds.clear();
+  updateProperties();
+  render();
+}
+
+function showAll() {
+  pushHistory();
+  state.elements.forEach(el => { el.hidden = false; });
+  render();
+}
+
+function bringToTop() {
+  if (state.selectedIds.size === 0) return;
+  pushHistory();
+  const sel = state.elements.filter(e => state.selectedIds.has(e.id));
+  const rest = state.elements.filter(e => !state.selectedIds.has(e.id));
+  // For each selected element, move it after all non-selected elements in the same layer
+  // Rebuild array: for each position, keep non-selected, then insert selected at the end of their layer group
+  const result = [];
+  const selByLayer = {};
+  sel.forEach(e => {
+    const l = e.type === 'light' ? 'light' : (e.layer || 0);
+    (selByLayer[l] = selByLayer[l] || []).push(e);
+  });
+  let prevLayer = null;
+  rest.forEach((e, i) => {
+    const l = e.type === 'light' ? 'light' : (e.layer || 0);
+    // When we transition to a new layer (or reach end), flush selected from the previous layer
+    if (prevLayer !== null && prevLayer !== l && selByLayer[prevLayer]) {
+      result.push(...selByLayer[prevLayer]);
+      delete selByLayer[prevLayer];
+    }
+    result.push(e);
+    prevLayer = l;
+  });
+  // Flush remaining selected (for the last layer and any layers that only had selected elements)
+  // First flush the last layer we saw
+  if (prevLayer !== null && selByLayer[prevLayer]) {
+    result.push(...selByLayer[prevLayer]);
+    delete selByLayer[prevLayer];
+  }
+  // Then any layers that had only selected elements (maintain layer order)
+  Object.keys(selByLayer).sort((a, b) => {
+    if (a === 'light') return 1;
+    if (b === 'light') return -1;
+    return a - b;
+  }).forEach(l => result.push(...selByLayer[l]));
+  state.elements = result;
+  render();
+}
+
+function pushToBottom() {
+  if (state.selectedIds.size === 0) return;
+  pushHistory();
+  const sel = state.elements.filter(e => state.selectedIds.has(e.id));
+  const rest = state.elements.filter(e => !state.selectedIds.has(e.id));
+  const result = [];
+  const selByLayer = {};
+  sel.forEach(e => {
+    const l = e.type === 'light' ? 'light' : (e.layer || 0);
+    (selByLayer[l] = selByLayer[l] || []).push(e);
+  });
+  let insertedLayers = new Set();
+  rest.forEach(e => {
+    const l = e.type === 'light' ? 'light' : (e.layer || 0);
+    // Before the first non-selected element of this layer, insert selected ones
+    if (!insertedLayers.has(l) && selByLayer[l]) {
+      result.push(...selByLayer[l]);
+      insertedLayers.add(l);
+    }
+    result.push(e);
+  });
+  // Any layers that had only selected elements
+  Object.keys(selByLayer).filter(l => !insertedLayers.has(l)).sort((a, b) => {
+    if (a === 'light') return 1;
+    if (b === 'light') return -1;
+    return a - b;
+  }).forEach(l => result.push(...selByLayer[l]));
+  state.elements = result;
+  render();
+}
+
+function selectElement(id) {
+  state.selectedIds.clear();
+  state.primarySelectedId = id;
+  if (id != null) state.selectedIds.add(id);
+  updateProperties();
+}
+
+function toggleSelect(id) {
+  if (state.selectedIds.has(id)) state.selectedIds.delete(id);
+  else state.selectedIds.add(id);
+  updateProperties();
+}
+
+function selectAll() {
+  state.selectedIds.clear();
+  state.elements.forEach(el => { if (!el.hidden) state.selectedIds.add(el.id); });
+  updateProperties();
+  render();
+}
+
+function getSelectedElements() {
+  return state.elements.filter(e => state.selectedIds.has(e.id));
+}
+
+function alignSelected(mode) {
+  const els = getSelectedElements();
+  if (els.length < 2) return;
+  pushHistory();
+  // For lights, treat as w=0, h=0
+  const getW = e => e.type === 'light' ? 0 : e.w;
+  const getH = e => e.type === 'light' ? 0 : e.h;
+
+  switch (mode) {
+    case 'left': {
+      const v = Math.min(...els.map(e => e.x));
+      els.forEach(e => { e.x = v; });
+      break;
+    }
+    case 'right': {
+      const v = Math.max(...els.map(e => e.x + getW(e)));
+      els.forEach(e => { e.x = v - getW(e); });
+      break;
+    }
+    case 'top': {
+      const v = Math.min(...els.map(e => e.y));
+      els.forEach(e => { e.y = v; });
+      break;
+    }
+    case 'bottom': {
+      const v = Math.max(...els.map(e => e.y + getH(e)));
+      els.forEach(e => { e.y = v - getH(e); });
+      break;
+    }
+    case 'centerH': {
+      const minX = Math.min(...els.map(e => e.x));
+      const maxR = Math.max(...els.map(e => e.x + getW(e)));
+      const cx = (minX + maxR) / 2;
+      els.forEach(e => { e.x = Math.round(cx - getW(e) / 2); });
+      break;
+    }
+    case 'centerV': {
+      const minY = Math.min(...els.map(e => e.y));
+      const maxB = Math.max(...els.map(e => e.y + getH(e)));
+      const cy = (minY + maxB) / 2;
+      els.forEach(e => { e.y = Math.round(cy - getH(e) / 2); });
+      break;
+    }
+  }
+  updateProperties();
+  render();
+}
+
+function spaceEvenly(axis) {
+  const els = getSelectedElements();
+  if (els.length < 3) return;
+  pushHistory();
+  const getW = e => e.type === 'light' ? 0 : e.w;
+  const getH = e => e.type === 'light' ? 0 : e.h;
+
+  if (axis === 'horizontal') {
+    els.sort((a, b) => a.x - b.x);
+    const first = els[0];
+    const last = els[els.length - 1];
+    const totalSpan = (last.x + getW(last)) - first.x;
+    const totalSize = els.reduce((s, e) => s + getW(e), 0);
+    const gap = (totalSpan - totalSize) / (els.length - 1);
+    let x = first.x;
+    els.forEach(e => {
+      e.x = Math.round(x);
+      x += getW(e) + gap;
+    });
+  } else {
+    els.sort((a, b) => a.y - b.y);
+    const first = els[0];
+    const last = els[els.length - 1];
+    const totalSpan = (last.y + getH(last)) - first.y;
+    const totalSize = els.reduce((s, e) => s + getH(e), 0);
+    const gap = (totalSpan - totalSize) / (els.length - 1);
+    let y = first.y;
+    els.forEach(e => {
+      e.y = Math.round(y);
+      y += getH(e) + gap;
+    });
+  }
+  updateProperties();
+  render();
+}
+
+// =====================================================================
+// GROUPS
+// =====================================================================
+function groupSelected() {
+  if (state.selectedIds.size < 2) return;
+  pushHistory();
+  const gid = state.nextGroupId++;
+  state.groups[gid] = { name: 'Group ' + gid };
+  state.elements.forEach(el => {
+    if (state.selectedIds.has(el.id)) el.groupId = gid;
+  });
+  updateProperties();
+  render();
+}
+
+function ungroupSelected() {
+  const gids = new Set();
+  state.elements.forEach(el => {
+    if (state.selectedIds.has(el.id) && el.groupId) gids.add(el.groupId);
+  });
+  if (gids.size === 0) return;
+  pushHistory();
+  state.elements.forEach(el => {
+    if (gids.has(el.groupId)) el.groupId = null;
+  });
+  gids.forEach(gid => delete state.groups[gid]);
+  updateProperties();
+  render();
+}
+
+/** Expand selection to include all group members of any selected element */
+function expandSelectionToGroups() {
+  const gids = new Set();
+  state.elements.forEach(el => {
+    if (state.selectedIds.has(el.id) && el.groupId) gids.add(el.groupId);
+  });
+  if (gids.size === 0) return;
+  state.elements.forEach(el => {
+    if (el.groupId && gids.has(el.groupId) && !el.hidden) {
+      state.selectedIds.add(el.id);
+    }
+  });
+}
+
+function cleanupEmptyGroups() {
+  const usedGids = new Set(state.elements.map(e => e.groupId).filter(Boolean));
+  Object.keys(state.groups).forEach(gidStr => {
+    if (!usedGids.has(Number(gidStr))) delete state.groups[gidStr];
+  });
+}
+
+function duplicateSelected() {
+  if (state.selectedIds.size === 0) return;
+  pushHistory();
+  const selected = state.elements.filter(e => state.selectedIds.has(e.id));
+  // Map old groupIds to new groupIds for duplicated groups
+  const groupMap = {};
+  selected.forEach(el => {
+    if (el.groupId && !(el.groupId in groupMap)) {
+      const newGid = state.nextGroupId++;
+      const oldGroup = state.groups[el.groupId];
+      state.groups[newGid] = { name: (oldGroup ? oldGroup.name : 'Group') + ' copy' };
+      groupMap[el.groupId] = newGid;
+    }
+  });
+  state.selectedIds.clear();
+  selected.forEach(el => {
+    const newEl = {
+      id: state.nextId++,
+      type: el.type,
+      x: Math.round(el.x + 50), y: Math.round(el.y + 50),
+      w: el.w || 0, h: el.h || 0,
+      texId: el.texId || null,
+      layer: el.layer,
+      tile: !!el.tile,
+      groupId: el.groupId ? groupMap[el.groupId] : null,
+    };
+    if (el.type === 'light') {
+      newEl.lightMode = el.lightMode; newEl.lightRadius = el.lightRadius;
+      newEl.lightColor = el.lightColor; newEl.lightIntensity = el.lightIntensity;
+      newEl.lightDirX = el.lightDirX; newEl.lightDirY = el.lightDirY; newEl.lightDirZ = el.lightDirZ;
+    }
+    if (el.pick) newEl.pick = true;
+    if (el.trap) {
+      newEl.trap = true; newEl.trapAnimType = el.trapAnimType; newEl.trapHidden = el.trapHidden;
+      newEl.trapCorridor = el.trapCorridor; newEl.trapOffset = el.trapOffset ? [...el.trapOffset] : [0,0,0,0];
+      newEl.trapTween = el.trapTween ? el.trapTween.map(t => ({...t})) : [];
+      newEl.trapTweenDuration = el.trapTweenDuration; newEl.trapTweenEase = el.trapTweenEase;
+    }
+    state.elements.push(newEl);
+    state.selectedIds.add(newEl.id);
+  });
+  updateProperties();
+  render();
+}
+
+function hitTest(wx, wy) {
+  // Collect all hits, then return the topmost by render order (layer, lights on top)
+  let best = null;
+  for (let i = 0; i < state.elements.length; i++) {
+    const el = state.elements[i];
+    if (el.hidden) continue;
+    let hit = false;
+    if (el.type === 'light') {
+      const dx = wx - el.x, dy = wy - el.y;
+      const hitR = Math.max(20 / state.zoom, 20);
+      hit = dx * dx + dy * dy <= hitR * hitR;
+    } else {
+      hit = wx >= el.x && wx <= el.x + el.w && wy >= el.y && wy <= el.y + el.h;
+    }
+    if (!hit) continue;
+    if (!best) { best = el; continue; }
+    // Same priority rules as render sort: lights always on top, then higher layer wins,
+    // then later array position (last added) wins within same layer
+    if (el.type === 'light' && best.type !== 'light') { best = el; }
+    else if (el.type !== 'light' && best.type === 'light') { /* keep best */ }
+    else if (el.layer > best.layer) { best = el; }
+    else if (el.layer === best.layer) { best = el; /* later in array = on top */ }
+  }
+  return best;
+}
+
+function isOnResizeHandle(el, wx, wy) {
+  const hs = 10 / state.zoom;
+  return wx >= el.x + el.w - hs && wy >= el.y + el.h - hs;
+}
+
+// =====================================================================
+// PROPERTIES PANEL
+// =====================================================================
+function updateProperties() {
+  const panel = document.getElementById('propContent');
+
+  if (state.selectedIds.size === 0) {
+    panel.innerHTML = `
+      <div class="prop-section-title">Level Lighting</div>
+      <div class="prop-row"><label>Ambient</label><input type="color" id="propAmbient" value="${state.ambientColor}" style="width:50px;height:24px;padding:0;border:none;cursor:pointer;"></div>
+      <div class="prop-row"><label>Light mult</label><input type="number" id="propLightMult" value="${state.lightMultiplier}" min="0" max="10" step="0.1" style="width:60px;"></div>
+      <div class="prop-section-title" style="margin-top:8px;">Player Light</div>
+      <div class="prop-row"><label>Enabled</label><input type="checkbox" id="propPlEnabled" ${state.playerLight?'checked':''}></div>
+      <div class="prop-row"><label>Intensity</label><input type="number" id="propPlInt" value="${state.playerLightIntensity}" min="0" max="10" step="0.1" style="width:60px;"></div>
+      <div class="prop-row"><label>Radius</label><input type="number" id="propPlRad" value="${state.playerLightRadius}" min="10" max="2000" step="10" style="width:60px;"></div>
+      <div class="prop-row"><label>Color</label><input type="color" id="propPlCol" value="${state.playerLightColor}" style="width:50px;height:24px;padding:0;border:none;cursor:pointer;"></div>
+    `;
+    var bindState = function(id, key, parse) {
+      var inp = document.getElementById(id);
+      if (!inp) return;
+      var saved = false;
+      var handler = function() {
+        if (!saved) { pushHistory(); saved = true; }
+        state[key] = parse ? parse(inp) : inp.value;
+      };
+      inp.addEventListener('change', handler);
+      inp.addEventListener('input', handler);
+    };
+    bindState('propAmbient', 'ambientColor');
+    bindState('propLightMult', 'lightMultiplier', function(inp) { return Math.max(0, parseFloat(inp.value) || 1); });
+    bindState('propPlEnabled', 'playerLight', function(inp) { return inp.checked; });
+    bindState('propPlInt', 'playerLightIntensity', function(inp) { return Math.max(0, parseFloat(inp.value) || 0); });
+    bindState('propPlRad', 'playerLightRadius', function(inp) { return Math.max(10, parseInt(inp.value) || 400); });
+    bindState('propPlCol', 'playerLightColor');
+    return;
+  }
+
+  // Multi-selection: check if it's a group with a primary element to show
+  if (state.selectedIds.size > 1) {
+    const primaryEl = state.primarySelectedId
+      ? state.elements.find(e => e.id === state.primarySelectedId)
+      : null;
+    const isGroupSelection = primaryEl && primaryEl.groupId;
+
+    if (!isGroupSelection) {
+      // Generic multi-selection: show alignment tools only
+      const count = state.selectedIds.size;
+      panel.innerHTML = `
+        <div class="prop-row"><label>Selected</label><span style="color:#aac">${count} elements</span></div>
+        <div class="prop-section-title">Align</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:4px;">
+          <button class="align-btn" id="alL" title="Align Left">Left</button>
+          <button class="align-btn" id="alCH" title="Align Center Horizontally">Center H</button>
+          <button class="align-btn" id="alR" title="Align Right">Right</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:4px;">
+          <button class="align-btn" id="alT" title="Align Top">Top</button>
+          <button class="align-btn" id="alCV" title="Align Center Vertically">Center V</button>
+          <button class="align-btn" id="alB" title="Align Bottom">Bottom</button>
+        </div>
+        <div class="prop-section-title">Distribute</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:4px;">
+          <button class="align-btn" id="spH" title="Space Evenly Horizontal">Space H</button>
+          <button class="align-btn" id="spV" title="Space Evenly Vertical">Space V</button>
+        </div>
+        <div class="prop-section-title">Group</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;">
+          <button class="align-btn" id="btnGrp" title="Group (Ctrl+G)">Group</button>
+          <button class="align-btn" id="btnUngrp" title="Ungroup (Ctrl+Shift+G)">Ungroup</button>
+          <button class="align-btn" id="btnDup" title="Duplicate (Ctrl+D)">Dupl.</button>
+        </div>
+      `;
+      document.getElementById('alL').onclick = () => alignSelected('left');
+      document.getElementById('alCH').onclick = () => alignSelected('centerH');
+      document.getElementById('alR').onclick = () => alignSelected('right');
+      document.getElementById('alT').onclick = () => alignSelected('top');
+      document.getElementById('alCV').onclick = () => alignSelected('centerV');
+      document.getElementById('alB').onclick = () => alignSelected('bottom');
+      document.getElementById('spH').onclick = () => spaceEvenly('horizontal');
+      document.getElementById('spV').onclick = () => spaceEvenly('vertical');
+      document.getElementById('btnGrp').onclick = groupSelected;
+      document.getElementById('btnUngrp').onclick = ungroupSelected;
+      document.getElementById('btnDup').onclick = duplicateSelected;
+      return;
+    }
+    // Group selection with primary element — fall through to single-element panel
+  }
+
+  // Use primarySelectedId if available and valid, otherwise first selected
+  const el = (state.primarySelectedId && state.elements.find(e => e.id === state.primarySelectedId && state.selectedIds.has(e.id)))
+    || state.elements.find(e => state.selectedIds.has(e.id));
+  if (!el) {
+    panel.innerHTML = '<p style="color:#446; font-size:11px;">Select an element</p>';
+    return;
+  }
+
+  if (el.type === 'light') {
+    const isDir = el.lightMode === 'directional';
+    panel.innerHTML = `
+      <div class="prop-row"><label>ID</label><span style="color:#aac">#${el.id}</span></div>
+      <div class="prop-row"><label>Type</label><span style="color:#ffcc44">Light</span></div>
+      <div class="prop-row"><label>Mode</label>
+        <select id="propLMode">
+          <option value="point" ${!isDir?'selected':''}>Point</option>
+          <option value="directional" ${isDir?'selected':''}>Directional</option>
+        </select>
+      </div>
+      <div class="prop-row"><label>X</label><input type="number" id="propX" value="${el.x}" step="1"></div>
+      <div class="prop-row"><label>Y</label><input type="number" id="propY" value="${el.y}" step="1"></div>
+      ${!isDir ? `
+        <div class="prop-row"><label>Radius</label><input type="number" id="propLR" value="${el.lightRadius}" min="10" step="10"></div>
+      ` : `
+        <div class="prop-row"><label>Dir X</label><input type="number" id="propLDX" value="${el.lightDirX}" step="0.05"></div>
+        <div class="prop-row"><label>Dir Y</label><input type="number" id="propLDY" value="${el.lightDirY}" step="0.05"></div>
+        <div class="prop-row"><label>Dir Z</label><input type="number" id="propLDZ" value="${el.lightDirZ}" step="0.05"></div>
+      `}
+      <div class="prop-row"><label>Color</label><input type="color" id="propLC" value="${el.lightColor}" style="width:50px;height:24px;padding:0;border:none;cursor:pointer;"></div>
+      <div class="prop-row"><label>Intensity</label><input type="number" id="propLI" value="${el.lightIntensity}" min="0" max="10" step="0.1"></div>
+      ${el.groupId ? `<div class="prop-row"><label>Group</label><input type="text" id="propGrpName" value="${(state.groups[el.groupId]||{}).name||''}" style="width:70px;"><button id="propRemoveFromGroup" style="font-size:10px;padding:1px 5px;cursor:pointer;background:#622;color:#c88;border:1px solid #844;border-radius:2px;margin-left:4px;" title="Remove from group">X</button></div>` : ''}
+    `;
+  } else {
+    panel.innerHTML = `
+      <div class="prop-row"><label>ID</label><span style="color:#aac">#${el.id}</span></div>
+      <div class="prop-row"><label>Type</label><span style="color:#aac">${el.type}</span></div>
+      <div class="prop-row"><label>X</label><input type="number" id="propX" value="${el.x}" step="1"></div>
+      <div class="prop-row"><label>Y</label><input type="number" id="propY" value="${el.y}" step="1"></div>
+      <div class="prop-row"><label>Width</label><input type="number" id="propW" value="${el.w}" min="1" step="1"></div>
+      <div class="prop-row"><label>Height</label><input type="number" id="propH" value="${el.h}" min="1" step="1"></div>
+      <div class="prop-row"><label>Layer</label>
+        <select id="propLayer">
+          ${[0,1,2,3,4,5].map(l => `<option value="${l}" ${l===el.layer?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div class="prop-row"><label></label><button id="propResetSize" style="width:90px;font-size:11px;cursor:pointer;background:#0f3460;color:#a8b8d8;border:1px solid #1a4080;padding:2px 6px;border-radius:2px;">Reset Size</button></div>
+      <div class="prop-row"><label>Tile</label><input type="checkbox" id="propTile" ${el.tile?'checked':''}></div>
+      <div class="prop-row"><label>Tint</label><input type="color" id="propTint" value="${el.tint || '#ffffff'}" style="width:50px;height:24px;padding:0;border:none;cursor:pointer;">
+        <button id="propTintReset" style="font-size:10px;padding:1px 5px;cursor:pointer;background:#0f3460;color:#a8b8d8;border:1px solid #1a4080;border-radius:2px;margin-left:4px;" title="Reset to white (no tint)">X</button></div>
+      <div class="prop-row"><label>Flip</label>
+        <label style="color:#aac;font-size:11px;"><input type="checkbox" id="propFlipX" ${el.flipX?'checked':''}>X</label>
+        <label style="color:#aac;font-size:11px;margin-left:8px;"><input type="checkbox" id="propFlipY" ${el.flipY?'checked':''}>Y</label>
+      </div>
+      <div class="prop-row"><label>Rotation</label><input type="number" id="propRot" value="${el.rotation || 0}" step="1" style="width:60px;"><span style="color:#667;font-size:10px;margin-left:2px;">deg</span></div>
+      <div class="prop-row"><label>Texture</label>
+        <select id="propTex">
+          <option value="">(none)</option>
+          ${Object.keys(state.textures).map(k =>
+            `<option value="${k}" ${k===el.texId?'selected':''}>${state.textures[k].name}</option>`
+          ).join('')}
+        </select>
+      </div>
+      ${el.groupId ? `
+        <div class="prop-row"><label>Group</label><input type="text" id="propGrpName" value="${(state.groups[el.groupId]||{}).name||''}" style="width:70px;"><button id="propRemoveFromGroup" style="font-size:10px;padding:1px 5px;cursor:pointer;background:#622;color:#c88;border:1px solid #844;border-radius:2px;margin-left:4px;" title="Remove from group">X</button></div>
+        <div class="prop-section-title" style="margin-top:6px;border-top:1px solid #1a2a4a;padding-top:6px;">Group Properties</div>
+        <div class="prop-row"><label>Layer</label>
+          <select id="propGrpLayer">
+            <option value="">(mixed)</option>
+            ${[0,1,2,3,4,5].map(l => `<option value="${l}">${l}</option>`).join('')}
+          </select>
+        </div>
+        <div class="prop-row"><label>Tint</label><input type="color" id="propGrpTint" value="#ffffff" style="width:50px;height:24px;padding:0;border:none;cursor:pointer;">
+          <button id="propGrpTintReset" style="font-size:10px;padding:1px 5px;cursor:pointer;background:#0f3460;color:#a8b8d8;border:1px solid #1a4080;border-radius:2px;margin-left:4px;" title="Reset group tint">X</button></div>
+        <div class="prop-row"><label>Flip</label>
+          <label style="color:#aac;font-size:11px;"><input type="checkbox" id="propGrpFlipX">X</label>
+          <label style="color:#aac;font-size:11px;margin-left:8px;"><input type="checkbox" id="propGrpFlipY">Y</label>
+        </div>
+      ` : `
+        ${Object.keys(state.groups).length > 0 ? `
+          <div class="prop-row"><label>Group</label>
+            <select id="propAddToGroupSel" style="width:60px;">
+              ${Object.keys(state.groups).map(gid => `<option value="${gid}">${(state.groups[gid]||{}).name||'Group '+gid}</option>`).join('')}
+            </select>
+            <button id="propAddToGroup" style="font-size:10px;padding:1px 5px;cursor:pointer;background:#0f3460;color:#a8b8d8;border:1px solid #1a4080;border-radius:2px;margin-left:4px;" title="Add to group">Add</button>
+          </div>
+        ` : ''}
+      `}
+      <div class="prop-section-title" style="margin-top:10px;border-top:1px solid #1a2a4a;padding-top:8px;">Special</div>
+      <div class="prop-row"><label>Pick</label><input type="checkbox" id="propPick" ${el.pick?'checked':''}></div>
+      <div class="prop-row"><label>Trap</label><input type="checkbox" id="propTrap" ${el.trap?'checked':''}></div>
+      <div id="trapDetails" style="display:${el.trap?'block':'none'}">
+        <div class="prop-row"><label>Anim type</label>
+          <select id="propTrapAnimType">
+            <option value="frames" ${(el.trapAnimType||'frames')==='frames'?'selected':''}>Frames</option>
+            <option value="tween" ${el.trapAnimType==='tween'?'selected':''}>Tween</option>
+          </select>
+        </div>
+        <div class="prop-row"><label>Hidden</label><input type="checkbox" id="propTrapHidden" ${el.trapHidden!==false?'checked':''}></div>
+        <div class="prop-row"><label>Corridor</label><input type="number" id="propTrapCorridor" value="${el.trapCorridor!=null?el.trapCorridor:4}" min="0" max="4" step="1" style="width:40px;"><span style="color:#667;font-size:10px;margin-left:2px;">0-3/4=all</span></div>
+        <div class="prop-row" style="flex-direction:column;align-items:flex-start;">
+          <label style="margin-bottom:2px;">Offset (frames)</label>
+          <div style="display:flex;gap:4px;">
+            ${[0,1,2,3].map(i => `<input type="number" class="trapOffsetInput" data-idx="${i}" value="${(el.trapOffset||[0,0,0,0])[i]||0}" min="0" step="1" style="width:38px;background:#0a0a1a;color:#aac;border:1px solid #1a4080;padding:2px;font-size:11px;border-radius:2px;" title="Corridor ${i}">`).join('')}
+          </div>
+        </div>
+        <div id="trapTweenDetails" style="display:${el.trapAnimType==='tween'?'block':'none'}">
+          <div class="prop-row"><label>Duration</label><input type="number" id="propTrapTweenDur" value="${el.trapTweenDuration||500}" min="1" step="50" style="width:60px;"><span style="color:#667;font-size:10px;margin-left:2px;">ms</span></div>
+          <div class="prop-row"><label>Ease</label>
+            <select id="propTrapTweenEase">
+              ${['Linear','Quad.easeIn','Quad.easeOut','Quad.easeInOut','Cubic.easeIn','Cubic.easeOut','Back.easeOut','Bounce.easeOut','Sine.easeIn','Sine.easeOut'].map(e =>
+                `<option value="${e}" ${(el.trapTweenEase||'Linear')===e?'selected':''}>${e}</option>`
+              ).join('')}
+            </select>
+          </div>
+          <div style="margin-top:4px;">
+            <label style="font-size:10px;color:#5a7aaa;text-transform:uppercase;letter-spacing:0.05em;">Tween Properties</label>
+            <div id="trapTweenList"></div>
+            <button id="btnAddTween" style="width:100%;margin-top:4px;padding:3px;font-size:11px;cursor:pointer;background:#0f3460;color:#a8b8d8;border:1px solid #1a4080;border-radius:2px;">+ Add Property</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Bind group name
+  const grpNameInp = document.getElementById('propGrpName');
+  if (grpNameInp && el.groupId && state.groups[el.groupId]) {
+    grpNameInp.addEventListener('change', () => {
+      state.groups[el.groupId].name = grpNameInp.value;
+    });
+  }
+
+  // Remove from group button
+  const removeFromGrpBtn = document.getElementById('propRemoveFromGroup');
+  if (removeFromGrpBtn && el.groupId) {
+    removeFromGrpBtn.onclick = () => {
+      pushHistory();
+      el.groupId = null;
+      cleanupEmptyGroups();
+      state.selectedIds.clear();
+      state.selectedIds.add(el.id);
+      state.primarySelectedId = el.id;
+      updateProperties();
+      render();
+    };
+  }
+
+  // Group-wide property controls (tint, layer, flip)
+  if (el.groupId) {
+    const grpMembers = state.elements.filter(e => e.groupId === el.groupId);
+
+    // Group layer
+    const grpLayerSel = document.getElementById('propGrpLayer');
+    if (grpLayerSel) {
+      // Show current value if all same, otherwise "(mixed)"
+      const layers = new Set(grpMembers.map(e => e.layer));
+      if (layers.size === 1) grpLayerSel.value = String([...layers][0]);
+      else grpLayerSel.value = '';
+      let saved = false;
+      const handler = () => {
+        if (grpLayerSel.value === '') return;
+        if (!saved) { pushHistory(); saved = true; }
+        const val = parseInt(grpLayerSel.value);
+        grpMembers.forEach(e => { e.layer = val; });
+        render();
+      };
+      grpLayerSel.addEventListener('change', handler);
+    }
+
+    // Group tint
+    const grpTintInp = document.getElementById('propGrpTint');
+    if (grpTintInp) {
+      const tints = new Set(grpMembers.map(e => e.tint || '#ffffff'));
+      if (tints.size === 1) grpTintInp.value = [...tints][0];
+      let saved = false;
+      const handler = () => {
+        if (!saved) { pushHistory(); saved = true; }
+        const val = grpTintInp.value === '#ffffff' ? null : grpTintInp.value;
+        grpMembers.forEach(e => { e.tint = val; });
+        render();
+      };
+      grpTintInp.addEventListener('change', handler);
+      grpTintInp.addEventListener('input', handler);
+    }
+    const grpTintReset = document.getElementById('propGrpTintReset');
+    if (grpTintReset) {
+      grpTintReset.onclick = () => {
+        pushHistory();
+        grpMembers.forEach(e => { e.tint = null; });
+        updateProperties();
+        render();
+      };
+    }
+
+    // Group flip
+    const grpFlipX = document.getElementById('propGrpFlipX');
+    const grpFlipY = document.getElementById('propGrpFlipY');
+    if (grpFlipX) {
+      const allFlipX = grpMembers.every(e => e.flipX);
+      grpFlipX.checked = allFlipX;
+      grpFlipX.indeterminate = !allFlipX && grpMembers.some(e => e.flipX);
+      let saved = false;
+      grpFlipX.addEventListener('change', () => {
+        if (!saved) { pushHistory(); saved = true; }
+        grpMembers.forEach(e => { e.flipX = grpFlipX.checked; });
+        render();
+      });
+    }
+    if (grpFlipY) {
+      const allFlipY = grpMembers.every(e => e.flipY);
+      grpFlipY.checked = allFlipY;
+      grpFlipY.indeterminate = !allFlipY && grpMembers.some(e => e.flipY);
+      let saved = false;
+      grpFlipY.addEventListener('change', () => {
+        if (!saved) { pushHistory(); saved = true; }
+        grpMembers.forEach(e => { e.flipY = grpFlipY.checked; });
+        render();
+      });
+    }
+  }
+
+  // Add to group button (for ungrouped elements)
+  const addToGrpBtn = document.getElementById('propAddToGroup');
+  const addToGrpSel = document.getElementById('propAddToGroupSel');
+  if (addToGrpBtn && addToGrpSel) {
+    addToGrpBtn.onclick = () => {
+      const gid = parseInt(addToGrpSel.value);
+      if (!gid || !state.groups[gid]) return;
+      pushHistory();
+      el.groupId = gid;
+      // Expand selection to include new group
+      expandSelectionToGroups();
+      updateProperties();
+      render();
+    };
+  }
+
+  // Bind changes
+  const bind = (id, prop, parse) => {
+    const inp = document.getElementById(id);
+    if (!inp) return;
+    let historySaved = false;
+    const saveOnce = () => { if (!historySaved) { pushHistory(); historySaved = true; } };
+    inp.addEventListener('focus', saveOnce);
+    inp.addEventListener('mousedown', saveOnce); // for checkboxes/color pickers
+    inp.addEventListener('change', () => {
+      saveOnce();
+      el[prop] = parse ? parse(inp) : inp.value;
+      render();
+    });
+    inp.addEventListener('input', () => {
+      saveOnce();
+      el[prop] = parse ? parse(inp) : inp.value;
+      render();
+    });
+  };
+  bind('propX', 'x', inp => parseInt(inp.value));
+  bind('propY', 'y', inp => parseInt(inp.value));
+  bind('propW', 'w', inp => Math.max(1, parseInt(inp.value)));
+  bind('propH', 'h', inp => Math.max(1, parseInt(inp.value)));
+  bind('propLayer', 'layer', inp => parseInt(inp.value));
+  bind('propTile', 'tile', inp => inp.checked);
+  bind('propPick', 'pick', inp => inp.checked || false);
+  bind('propTint', 'tint', inp => inp.value === '#ffffff' ? null : inp.value);
+  bind('propFlipX', 'flipX', inp => inp.checked || false);
+  bind('propFlipY', 'flipY', inp => inp.checked || false);
+  bind('propRot', 'rotation', inp => parseFloat(inp.value) || 0);
+  bind('propTex', 'texId', inp => inp.value || null);
+  const tintResetBtn = document.getElementById('propTintReset');
+  if (tintResetBtn) {
+    tintResetBtn.onclick = () => { el.tint = null; updateProperties(); render(); };
+  }
+
+  // Reset size to original texture dimensions
+  const resetBtn = document.getElementById('propResetSize');
+  if (resetBtn) {
+    resetBtn.onclick = () => {
+      const tex = state.textures[el.texId];
+      if (tex) {
+        el.w = tex.frameWidth || tex.w;
+        el.h = tex.frameHeight || tex.h;
+        updateProperties();
+        render();
+      }
+    };
+  }
+  // Light properties
+  bind('propLR', 'lightRadius', inp => Math.max(10, parseInt(inp.value)));
+  bind('propLC', 'lightColor', inp => inp.value);
+  bind('propLI', 'lightIntensity', inp => Math.max(0, parseFloat(inp.value)));
+  bind('propLDX', 'lightDirX', inp => parseFloat(inp.value));
+  bind('propLDY', 'lightDirY', inp => parseFloat(inp.value));
+  bind('propLDZ', 'lightDirZ', inp => parseFloat(inp.value));
+
+  // Light mode switch — rebuild properties panel when changed
+  const modeSel = document.getElementById('propLMode');
+  if (modeSel) {
+    modeSel.addEventListener('change', () => {
+      el.lightMode = modeSel.value;
+      updateProperties(); // rebuild to show/hide relevant fields
+      render();
+    });
+  }
+
+  // --- Trap properties ---
+  const trapCheck = document.getElementById('propTrap');
+  if (trapCheck) {
+    trapCheck.addEventListener('change', () => {
+      pushHistory();
+      el.trap = trapCheck.checked;
+      if (el.trap && !el.trapOffset) el.trapOffset = [0, 0, 0, 0];
+      if (el.trap && !el.trapTween) el.trapTween = [];
+      document.getElementById('trapDetails').style.display = el.trap ? 'block' : 'none';
+    });
+  }
+  bind('propTrapHidden', 'trapHidden', inp => inp.checked);
+  bind('propTrapCorridor', 'trapCorridor', inp => Math.min(4, Math.max(0, parseInt(inp.value) || 0)));
+  bind('propTrapTweenDur', 'trapTweenDuration', inp => Math.max(1, parseInt(inp.value) || 500));
+  bind('propTrapTweenEase', 'trapTweenEase');
+
+  // Trap anim type switch
+  const trapAnimSel = document.getElementById('propTrapAnimType');
+  if (trapAnimSel) {
+    trapAnimSel.addEventListener('change', () => {
+      pushHistory();
+      el.trapAnimType = trapAnimSel.value;
+      document.getElementById('trapTweenDetails').style.display = el.trapAnimType === 'tween' ? 'block' : 'none';
+    });
+  }
+
+  // Trap offset inputs (4 values, one per corridor)
+  document.querySelectorAll('.trapOffsetInput').forEach(inp => {
+    let saved = false;
+    const handler = () => {
+      if (!saved) { pushHistory(); saved = true; }
+      if (!el.trapOffset) el.trapOffset = [0, 0, 0, 0];
+      el.trapOffset[parseInt(inp.dataset.idx)] = Math.max(0, parseInt(inp.value) || 0);
+    };
+    inp.addEventListener('change', handler);
+    inp.addEventListener('input', handler);
+  });
+
+  // Tween property list
+  const tweenListEl = document.getElementById('trapTweenList');
+  const btnAddTween = document.getElementById('btnAddTween');
+
+  function renderTweenList() {
+    if (!tweenListEl) return;
+    if (!el.trapTween) el.trapTween = [];
+    tweenListEl.innerHTML = '';
+    el.trapTween.forEach((tw, i) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:3px;margin-bottom:3px;';
+      row.innerHTML = `
+        <select class="twProp" data-i="${i}" style="width:55px;background:#0a0a1a;color:#aac;border:1px solid #1a4080;padding:1px 2px;font-size:11px;border-radius:2px;">
+          ${['x','y','alpha','scaleX','scaleY','rotation'].map(p =>
+            `<option value="${p}" ${tw.prop===p?'selected':''}>${p}</option>`
+          ).join('')}
+        </select>
+        <input type="number" class="twFrom" data-i="${i}" value="${tw.from!=null?tw.from:0}" step="any" style="width:42px;background:#0a0a1a;color:#aac;border:1px solid #1a4080;padding:1px 2px;font-size:11px;border-radius:2px;" title="From">
+        <span style="color:#556;font-size:10px;">\u2192</span>
+        <input type="number" class="twTo" data-i="${i}" value="${tw.to!=null?tw.to:0}" step="any" style="width:42px;background:#0a0a1a;color:#aac;border:1px solid #1a4080;padding:1px 2px;font-size:11px;border-radius:2px;" title="To">
+        <button class="twDel" data-i="${i}" style="background:#622;color:#c88;border:1px solid #844;padding:0 4px;font-size:11px;cursor:pointer;border-radius:2px;" title="Remove">\u00d7</button>
+      `;
+      tweenListEl.appendChild(row);
+    });
+
+    // Bind tween row inputs
+    tweenListEl.querySelectorAll('.twProp').forEach(sel => {
+      sel.addEventListener('change', () => {
+        pushHistory();
+        el.trapTween[parseInt(sel.dataset.i)].prop = sel.value;
+      });
+    });
+    tweenListEl.querySelectorAll('.twFrom').forEach(inp => {
+      inp.addEventListener('change', () => {
+        pushHistory();
+        el.trapTween[parseInt(inp.dataset.i)].from = parseFloat(inp.value) || 0;
+      });
+    });
+    tweenListEl.querySelectorAll('.twTo').forEach(inp => {
+      inp.addEventListener('change', () => {
+        pushHistory();
+        el.trapTween[parseInt(inp.dataset.i)].to = parseFloat(inp.value) || 0;
+      });
+    });
+    tweenListEl.querySelectorAll('.twDel').forEach(btn => {
+      btn.addEventListener('click', () => {
+        pushHistory();
+        el.trapTween.splice(parseInt(btn.dataset.i), 1);
+        renderTweenList();
+      });
+    });
+  }
+
+  if (btnAddTween) {
+    btnAddTween.addEventListener('click', () => {
+      pushHistory();
+      if (!el.trapTween) el.trapTween = [];
+      el.trapTween.push({ prop: 'y', from: 0, to: 0 });
+      renderTweenList();
+    });
+  }
+  renderTweenList();
+}
+
+// =====================================================================
+// TEXTURE MANAGEMENT
+// =====================================================================
+function addTexture(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const name = file.name.replace(/\.[^.]+$/, '');
+      // Use name as texId (no timestamp) so catalog references are stable
+      const texId = name;
+      state.textures[texId] = {
+        img, name,
+        path: file.name,  // filename for catalog (assumes img/bg/)
+        w: img.naturalWidth, h: img.naturalHeight
+      };
+      refreshTexList();
+      state.selectedTexId = texId;
+      render();
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function refreshTexList() {
+  const list = document.getElementById('texList');
+  list.innerHTML = '';
+  Object.entries(state.textures).forEach(([id, tex]) => {
+    const div = document.createElement('div');
+    div.className = 'tex-item' + (id === state.selectedTexId ? ' selected' : '');
+    div.onclick = () => {
+      state.selectedTexId = id;
+      refreshTexList();
+    };
+    div.ondblclick = (e) => {
+      e.stopPropagation();
+      reloadTexture(id);
+    };
+
+    const preview = document.createElement('canvas');
+    preview.width = 32; preview.height = 32;
+    const pc = preview.getContext('2d');
+    const fw = tex.frameWidth || tex.w, fh = tex.frameHeight || tex.h;
+    const s = Math.min(32 / fw, 32 / fh);
+    pc.drawImage(tex.img, 0, 0, fw, fh, (32 - fw * s) / 2, (32 - fh * s) / 2, fw * s, fh * s);
+
+    const span = document.createElement('span');
+    const label = tex.frameWidth ? '\u25B6 ' + tex.name : tex.name;
+    span.textContent = label + ' (' + tex.w + 'x' + tex.h + ')';
+
+    div.appendChild(preview);
+    div.appendChild(span);
+    list.appendChild(div);
+  });
+  updateTexAnimPanel();
+}
+
+function updateTexAnimPanel() {
+  const panel = document.getElementById('texAnimProps');
+  const tex = state.selectedTexId ? state.textures[state.selectedTexId] : null;
+  if (!tex) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  const fwInp = document.getElementById('texFW');
+  const fhInp = document.getElementById('texFH');
+  const fpsInp = document.getElementById('texFPS');
+  const countSpan = document.getElementById('texFrameCount');
+  fwInp.value = tex.frameWidth || '';
+  fhInp.value = tex.frameHeight || '';
+  fpsInp.value = tex.frameRate || 10;
+  if (tex.frameWidth && tex.frameHeight) {
+    const cols = Math.floor(tex.w / tex.frameWidth);
+    const rows = Math.floor(tex.h / tex.frameHeight);
+    countSpan.textContent = cols * rows;
+  } else {
+    countSpan.textContent = '—';
+  }
+  fwInp.onchange = () => {
+    const v = parseInt(fwInp.value);
+    if (v > 0) tex.frameWidth = v; else delete tex.frameWidth;
+    pushHistory(); updateTexAnimPanel(); refreshTexList(); render();
+  };
+  fhInp.onchange = () => {
+    const v = parseInt(fhInp.value);
+    if (v > 0) tex.frameHeight = v; else delete tex.frameHeight;
+    pushHistory(); updateTexAnimPanel(); refreshTexList(); render();
+  };
+  fpsInp.onchange = () => {
+    tex.frameRate = Math.max(1, parseInt(fpsInp.value) || 10);
+    pushHistory(); updateTexAnimPanel();
+  };
+}
+
+function reloadTexture(texId) {
+  const tex = state.textures[texId];
+  if (!tex || !tex.path) return;
+  const url = TEX_BASE_PATH + tex.path + '?t=' + Date.now();
+  const img = new Image();
+  img.onload = () => {
+    tex.img = img;
+    tex.w = img.naturalWidth;
+    tex.h = img.naturalHeight;
+    refreshTexList();
+    render();
+    document.getElementById('statusLeft').textContent = 'Reloaded: ' + tex.name;
+  };
+  img.onerror = () => {
+    document.getElementById('statusLeft').textContent = 'Reload failed: ' + tex.name;
+  };
+  img.src = url;
+}
+
+function reloadAllTextures() {
+  const ids = Object.keys(state.textures).filter(id => state.textures[id].path);
+  if (ids.length === 0) return;
+  let done = 0;
+  document.getElementById('statusLeft').textContent = 'Reloading textures...';
+  ids.forEach(id => {
+    const tex = state.textures[id];
+    const url = TEX_BASE_PATH + tex.path + '?t=' + Date.now();
+    const img = new Image();
+    img.onload = () => {
+      tex.img = img;
+      tex.w = img.naturalWidth;
+      tex.h = img.naturalHeight;
+      done++;
+      if (done === ids.length) {
+        refreshTexList();
+        render();
+        document.getElementById('statusLeft').textContent = 'Reloaded ' + done + ' textures';
+      }
+    };
+    img.onerror = () => {
+      done++;
+      if (done === ids.length) { refreshTexList(); render(); }
+    };
+    img.src = url;
+  });
+}
+
+// =====================================================================
+// INPUT HANDLING
+// =====================================================================
+let isPanning = false;
+let panStart = { x: 0, y: 0, panX: 0, panY: 0 };
+
+viewport.addEventListener('mousedown', (e) => {
+  const rect = cvs.getBoundingClientRect();
+  const sx = e.clientX - rect.left;
+  const sy = e.clientY - rect.top;
+  const w = screenToWorld(sx, sy);
+
+  // Middle button or space+click = pan
+  if (e.button === 1 || (e.button === 0 && e.altKey)) {
+    isPanning = true;
+    panStart = { x: e.clientX, y: e.clientY, panX: state.panX, panY: state.panY };
+    cvs.style.cursor = 'grabbing';
+    e.preventDefault();
+    return;
+  }
+
+  if (e.button !== 0) return;
+
+  if (state.tool === 'select') {
+    // Check resize handle for single selection
+    if (state.selectedIds.size === 1) {
+      const sel = state.elements.find(el => state.selectedIds.has(el.id));
+      if (sel && sel.type !== 'light' && isOnResizeHandle(sel, w.x, w.y)) {
+        pushHistory();
+        state.dragging = {
+          mode: 'resize', el: sel,
+          startX: w.x, startY: w.y,
+          origW: sel.w, origH: sel.h,
+        };
+        return;
+      }
+    }
+
+    const hit = hitTest(w.x, w.y);
+    if (hit) {
+      if (e.shiftKey) {
+        // Shift+click: toggle individual element, ignore groups
+        toggleSelect(hit.id);
+      } else if (!state.selectedIds.has(hit.id)) {
+        // Select element + expand to its group
+        selectElement(hit.id);
+        expandSelectionToGroups();
+      } else if (state.primarySelectedId !== hit.id) {
+        // Clicked a different element within the same group selection — switch primary
+        state.primarySelectedId = hit.id;
+        updateProperties();
+      }
+      // Start multi-drag for all selected
+      pushHistory();
+      state.dragging = {
+        mode: 'move',
+        startX: w.x, startY: w.y,
+        origPositions: state.elements
+          .filter(el => state.selectedIds.has(el.id))
+          .map(el => ({ id: el.id, x: el.x, y: el.y })),
+      };
+    } else {
+      if (!e.shiftKey) selectElement(null);
+      // Start rubber-band box selection
+      state.rubberBand = { x: w.x, y: w.y, w: 0, h: 0 };
+    }
+    render();
+
+  } else if (state.tool === 'rect') {
+    state.drawStart = { x: w.x, y: w.y, w: 0, h: 0 };
+
+  } else if (state.tool === 'sprite') {
+    if (state.selectedTexId) {
+      const tex = state.textures[state.selectedTexId];
+      const sw = tex.frameWidth || tex.w, sh = tex.frameHeight || tex.h;
+      addElement('sprite', w.x - sw / 2, w.y - sh / 2, sw, sh, state.selectedTexId,
+        parseInt(document.getElementById('selLayer').value), false);
+    }
+
+  } else if (state.tool === 'light') {
+    addLight(w.x, w.y);
+  }
+});
+
+viewport.addEventListener('mousemove', (e) => {
+  const rect = cvs.getBoundingClientRect();
+  const sx = e.clientX - rect.left;
+  const sy = e.clientY - rect.top;
+  const w = screenToWorld(sx, sy);
+
+  if (isPanning) {
+    const dx = (e.clientX - panStart.x) / state.zoom;
+    const dy = (e.clientY - panStart.y) / state.zoom;
+    state.panX = panStart.panX - dx;
+    state.panY = panStart.panY - dy;
+    render();
+    return;
+  }
+
+  if (state.dragging) {
+    const d = state.dragging;
+    if (d.mode === 'move') {
+      const dx = w.x - d.startX;
+      const dy = w.y - d.startY;
+      d.origPositions.forEach(op => {
+        const el = state.elements.find(e => e.id === op.id);
+        if (el) {
+          el.x = Math.round(op.x + dx);
+          el.y = Math.round(op.y + dy);
+        }
+      });
+    } else if (d.mode === 'resize') {
+      d.el.w = Math.max(8, Math.round(d.origW + (w.x - d.startX)));
+      d.el.h = Math.max(8, Math.round(d.origH + (w.y - d.startY)));
+    }
+    updateProperties();
+    render();
+    return;
+  }
+
+  // Rubber-band selection
+  if (state.rubberBand) {
+    state.rubberBand.w = w.x - state.rubberBand.x;
+    state.rubberBand.h = w.y - state.rubberBand.y;
+    render();
+    return;
+  }
+
+  if (state.tool === 'rect' && state.drawStart) {
+    state.drawStart.w = w.x - state.drawStart.x;
+    state.drawStart.h = w.y - state.drawStart.y;
+    render();
+  }
+
+  // Cursor
+  if (state.tool === 'select') {
+    if (state.selectedIds.size === 1) {
+      const sel = state.elements.find(el => state.selectedIds.has(el.id));
+      if (sel && sel.type !== 'light' && isOnResizeHandle(sel, w.x, w.y)) {
+        cvs.style.cursor = 'se-resize';
+        return;
+      }
+    }
+    if (hitTest(w.x, w.y)) {
+      cvs.style.cursor = 'move';
+    } else {
+      cvs.style.cursor = 'default';
+    }
+  }
+});
+
+viewport.addEventListener('mouseup', (e) => {
+  if (isPanning) {
+    isPanning = false;
+    cvs.style.cursor = 'default';
+    return;
+  }
+
+  if (state.dragging) {
+    state.dragging = null;
+    return;
+  }
+
+  // Finish rubber-band selection
+  if (state.rubberBand) {
+    const rb = state.rubberBand;
+    const rx = Math.min(rb.x, rb.x + rb.w);
+    const ry = Math.min(rb.y, rb.y + rb.h);
+    const rw = Math.abs(rb.w);
+    const rh = Math.abs(rb.h);
+    state.rubberBand = null;
+    if (rw > 4 || rh > 4) {
+      if (!e.shiftKey) state.selectedIds.clear();
+      state.elements.forEach(el => {
+        if (el.hidden) return;
+        if (el.type === 'light') {
+          if (el.x >= rx && el.x <= rx + rw && el.y >= ry && el.y <= ry + rh) {
+            state.selectedIds.add(el.id);
+          }
+        } else {
+          // Element intersects box
+          if (el.x + el.w > rx && el.x < rx + rw && el.y + el.h > ry && el.y < ry + rh) {
+            state.selectedIds.add(el.id);
+          }
+        }
+      });
+      expandSelectionToGroups();
+      updateProperties();
+    }
+    render();
+    return;
+  }
+
+  if (state.tool === 'rect' && state.drawStart) {
+    const ds = state.drawStart;
+    let x = ds.x, y = ds.y, w = ds.w || 0, h = ds.h || 0;
+    if (w < 0) { x += w; w = -w; }
+    if (h < 0) { y += h; h = -h; }
+    if (w > 4 && h > 4) {
+      addElement('rect', x, y, w, h, state.selectedTexId,
+        parseInt(document.getElementById('selLayer').value), true);
+    }
+    state.drawStart = null;
+    render();
+  }
+});
+
+// Zoom
+viewport.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const rect = cvs.getBoundingClientRect();
+  const sx = e.clientX - rect.left;
+  const sy = e.clientY - rect.top;
+
+  // World pos under cursor before zoom
+  const before = screenToWorld(sx, sy);
+
+  const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+  state.zoom = Math.max(0.02, Math.min(4, state.zoom * factor));
+
+  // Adjust pan so the same world point stays under cursor
+  const after = screenToWorld(sx, sy);
+  state.panX -= (after.x - before.x);
+  state.panY -= (after.y - before.y);
+
+  render();
+}, { passive: false });
+
+// Minimap click to pan
+document.getElementById('minimap').addEventListener('mousedown', (e) => {
+  const rect = minimapCvs.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const scale = minimapCvs.width / CANVAS_W;
+  const viewW = cvs.width / state.zoom;
+  state.panX = (mx / scale) - viewW / 2;
+  state.panY = 0;
+  render();
+});
+
+// Keyboard
+document.addEventListener('keydown', (e) => {
+  // Don't handle if typing in input
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+  if (e.key === 'v' || e.key === 'V') setTool('select');
+  if (e.key === 'r' || e.key === 'R') setTool('rect');
+  if (e.key === 's' || e.key === 'S') setTool('sprite');
+  if (e.key === 'l' || e.key === 'L') setTool('light');
+  if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
+  if (e.key === 'h' || e.key === 'H') hideSelected();
+  if (e.ctrlKey && e.shiftKey && (e.key === 'g' || e.key === 'G')) { ungroupSelected(); e.preventDefault(); }
+  else if (e.ctrlKey && (e.key === 'g' || e.key === 'G')) { groupSelected(); e.preventDefault(); }
+  else if (!e.ctrlKey && (e.key === 'g' || e.key === 'G')) { state.showGuides = !state.showGuides; updateGuideBtn(); render(); }
+  if (e.ctrlKey && (e.key === 'd' || e.key === 'D')) { duplicateSelected(); e.preventDefault(); }
+  if (e.ctrlKey && !e.shiftKey && e.key === 'z') { undo(); e.preventDefault(); }
+  if (e.ctrlKey && e.shiftKey && e.key === 'Z') { redo(); e.preventDefault(); }
+  if (e.ctrlKey && e.key === 'c') { copySelected(); e.preventDefault(); }
+  if (e.ctrlKey && e.key === 'v') { pasteClipboard(); e.preventDefault(); }
+  if (e.ctrlKey && e.key === 'a') {
+    e.preventDefault();
+    selectAll();
+  }
+  if (e.key === ']') { bringToTop(); }
+  if (e.key === '[') { pushToBottom(); }
+  if (e.key === 'F5') {
+    e.preventDefault();
+    document.getElementById('btnPreview').click();
+  }
+  if (e.key === 'Escape') {
+    state.selectedIds.clear();
+    state.drawStart = null;
+    updateProperties();
+    render();
+  }
+});
+
+// =====================================================================
+// TOOLBAR BINDINGS
+// =====================================================================
+function setTool(t) {
+  state.tool = t;
+  document.getElementById('btnSelect').classList.toggle('active', t === 'select');
+  document.getElementById('btnRect').classList.toggle('active', t === 'rect');
+  document.getElementById('btnSprite').classList.toggle('active', t === 'sprite');
+  document.getElementById('btnLight').classList.toggle('active', t === 'light');
+  cvs.style.cursor = t === 'select' ? 'default' : 'crosshair';
+}
+
+function updateGuideBtn() {
+  document.getElementById('btnGuides').classList.toggle('active', state.showGuides);
+}
+
+
+document.getElementById('btnSelect').onclick = () => setTool('select');
+document.getElementById('btnRect').onclick = () => setTool('rect');
+document.getElementById('btnSprite').onclick = () => setTool('sprite');
+document.getElementById('btnLight').onclick = () => setTool('light');
+document.getElementById('btnCopy').onclick = copySelected;
+document.getElementById('btnPaste').onclick = pasteClipboard;
+document.getElementById('btnDelete').onclick = deleteSelected;
+document.getElementById('btnHide').onclick = hideSelected;
+document.getElementById('btnShowAll').onclick = showAll;
+document.getElementById('btnToTop').onclick = bringToTop;
+document.getElementById('btnToBottom').onclick = pushToBottom;
+document.getElementById('btnGuides').onclick = () => {
+  state.showGuides = !state.showGuides;
+  updateGuideBtn();
+  render();
+};
+
+document.getElementById('inpSkyH').addEventListener('change', (e) => {
+  pushHistory();
+  state.skyHeight = parseInt(e.target.value) || 0;
+  render();
+});
+
+// Texture drop / file input
+const texDrop = document.getElementById('texDropZone');
+const texInput = document.getElementById('texFileInput');
+
+texDrop.addEventListener('click', () => texInput.click());
+texDrop.addEventListener('dragover', e => { e.preventDefault(); texDrop.style.borderColor = '#5a8aff'; });
+texDrop.addEventListener('dragleave', () => { texDrop.style.borderColor = '#1a2a4a'; });
+texDrop.addEventListener('drop', e => {
+  e.preventDefault();
+  texDrop.style.borderColor = '#1a2a4a';
+  [...e.dataTransfer.files].forEach(addTexture);
+});
+texInput.addEventListener('change', () => {
+  [...texInput.files].forEach(addTexture);
+  texInput.value = '';
+});
+
+// =====================================================================
+// EXPORT / IMPORT
+// =====================================================================
+function buildLevelData() {
+  return {
+    skyHeight: state.skyHeight,
+    lighting: {
+      ambientColor: state.ambientColor,
+      lightMultiplier: state.lightMultiplier,
+      playerLight: state.playerLight,
+      playerLightIntensity: state.playerLightIntensity,
+      playerLightRadius: state.playerLightRadius,
+      playerLightColor: state.playerLightColor,
+    },
+    elements: state.elements.map(el => {
+      const out = {
+        id: el.id, type: el.type,
+        x: el.x, y: el.y,
+      };
+      if (el.groupId) out.groupId = el.groupId;
+      if (el.type === 'light') {
+        out.lightMode = el.lightMode;
+        out.lightColor = el.lightColor;
+        out.lightIntensity = el.lightIntensity;
+        if (el.lightMode === 'directional') {
+          out.lightDirX = el.lightDirX;
+          out.lightDirY = el.lightDirY;
+          out.lightDirZ = el.lightDirZ;
+        } else {
+          out.lightRadius = el.lightRadius;
+        }
+      } else {
+        out.w = el.w; out.h = el.h;
+        out.texId = el.texId; out.layer = el.layer; out.tile = el.tile;
+        if (el.tint) out.tint = el.tint;
+        if (el.flipX) out.flipX = true;
+        if (el.flipY) out.flipY = true;
+        if (el.rotation) out.rotation = el.rotation;
+        if (el.pick) out.pick = true;
+        if (el.trap) {
+          out.trap = true;
+          out.trapAnimType = el.trapAnimType || 'frames';
+          out.trapHidden = el.trapHidden !== false;
+          out.trapCorridor = el.trapCorridor != null ? el.trapCorridor : 4;
+          out.trapOffset = el.trapOffset || [0, 0, 0, 0];
+          if (el.trapAnimType === 'tween') {
+            out.trapTween = el.trapTween || [];
+            out.trapTweenDuration = el.trapTweenDuration || 500;
+            out.trapTweenEase = el.trapTweenEase || 'Linear';
+          }
+        }
+      }
+      return out;
+    }),
+    groups: state.groups,
+    textures: Object.fromEntries(
+      Object.entries(state.textures).map(([id, t]) => {
+        const out = { name: t.name, w: t.w, h: t.h };
+        if (t.frameWidth) { out.frameWidth = t.frameWidth; out.frameHeight = t.frameHeight; out.frameRate = t.frameRate || 10; }
+        return [id, out];
+      })
+    ),
+  };
+}
+
+document.getElementById('btnPreview').onclick = () => {
+  localStorage.setItem('_floquest_preview', JSON.stringify(buildLevelData()));
+  window.open('level_preview.html', '_blank');
+};
+
+document.getElementById('btnExport').onclick = () => {
+  const data = buildLevelData();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'level_layout.json';
+  a.click();
+};
+
+document.getElementById('btnImport').onclick = () => {
+  document.getElementById('fileImport').click();
+};
+document.getElementById('fileImport').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      pushHistory();
+      state.skyHeight = data.skyHeight || 224;
+      document.getElementById('inpSkyH').value = state.skyHeight;
+      var lt = data.lighting || {};
+      state.ambientColor = lt.ambientColor || '#0a0a10';
+      state.lightMultiplier = lt.lightMultiplier != null ? lt.lightMultiplier : 1.0;
+      state.playerLight = !!lt.playerLight;
+      state.playerLightIntensity = lt.playerLightIntensity || 1.0;
+      state.playerLightRadius = lt.playerLightRadius || 400;
+      state.playerLightColor = lt.playerLightColor || '#fff2dd';
+      state.elements = data.elements || [];
+      state.groups = data.groups || {};
+      state.nextId = Math.max(1, ...state.elements.map(e => e.id)) + 1;
+      const groupIds = state.elements.map(e => e.groupId || 0);
+      state.nextGroupId = Math.max(1, ...groupIds) + 1;
+      state.selectedIds.clear();
+      updateProperties();
+      render();
+    } catch (err) {
+      alert('Invalid JSON: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+document.getElementById('btnSaveTex').onclick = saveTextureCatalog;
+document.getElementById('btnReloadTex').onclick = reloadAllTextures;
+
+// =====================================================================
+// TEXTURE CATALOG — load from JSON, save with File System Access API
+// =====================================================================
+
+/** Load texture catalog from JSON, then load each image */
+function loadTextureCatalog() {
+  document.getElementById('statusLeft').textContent = 'Loading texture catalog...';
+
+  fetch(TEX_CATALOG_URL)
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(catalog => {
+      if (!Array.isArray(catalog) || catalog.length === 0) {
+        document.getElementById('statusLeft').textContent = 'No textures in catalog';
+        return;
+      }
+      let loaded = 0;
+      const total = catalog.length;
+
+      catalog.forEach(entry => {
+        const img = new Image();
+        img.onload = () => {
+          const texId = entry.name;
+          const texData = { img, name: entry.name, path: entry.path, w: img.naturalWidth, h: img.naturalHeight };
+          if (entry.frameWidth) { texData.frameWidth = entry.frameWidth; texData.frameHeight = entry.frameHeight; texData.frameRate = entry.frameRate || 10; }
+          state.textures[texId] = texData;
+          loaded++;
+          document.getElementById('statusLeft').textContent = `Loaded ${loaded}/${total}: ${entry.name}`;
+          if (loaded === total) {
+            refreshTexList();
+            render();
+            document.getElementById('statusLeft').textContent = `${total} textures loaded`;
+          }
+        };
+        img.onerror = () => {
+          loaded++;
+          console.warn('Failed to load texture:', entry.path);
+          if (loaded === total) { refreshTexList(); render(); }
+        };
+        img.src = TEX_BASE_PATH + entry.path;
+      });
+    })
+    .catch(err => {
+      console.warn('Could not load texture catalog:', err);
+      document.getElementById('statusLeft').textContent = 'No texture catalog found';
+    });
+}
+
+/** Build catalog array from current textures */
+function buildCatalog() {
+  return Object.values(state.textures).map(tex => {
+    const out = { name: tex.name, path: tex.path || tex.name + '.png' };
+    if (tex.frameWidth) { out.frameWidth = tex.frameWidth; out.frameHeight = tex.frameHeight; out.frameRate = tex.frameRate || 10; }
+    return out;
+  });
+}
+
+/** Save catalog using File System Access API */
+async function saveTextureCatalog() {
+  if (!window.showSaveFilePicker) {
+    alert('File System Access API not supported in this browser. Use Chrome or Edge.');
+    return;
+  }
+
+  const catalog = buildCatalog();
+  const json = JSON.stringify(catalog, null, 2) + '\n';
+
+  try {
+    // Reuse handle if we have one, otherwise prompt
+    if (!texCatalogHandle) {
+      texCatalogHandle = await window.showSaveFilePicker({
+        suggestedName: 'textures.json',
+        types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
+      });
+    }
+    const writable = await texCatalogHandle.createWritable();
+    await writable.write(json);
+    await writable.close();
+    document.getElementById('statusLeft').textContent = `Texture catalog saved (${catalog.length} textures)`;
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      console.error('Save failed:', err);
+      alert('Save failed: ' + err.message);
+    }
+  }
+}
+
+// =====================================================================
+// INIT
+// =====================================================================
+window.addEventListener('resize', resize);
+resize();
+
+// Center view vertically, start at x=0
+state.panY = -((cvs.height / state.zoom) - CANVAS_H) / 2;
+
+loadTextureCatalog();
+render();
+pushHistory(); // initial snapshot
+</script>
+</body>
+</html>

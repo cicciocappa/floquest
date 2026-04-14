@@ -1,0 +1,124 @@
+{
+    "1": {
+        "1": [
+            { "q": "Qual è il capoluogo della Lombardia?", "answers": ["Milano", "Torino", "Roma", "Firenze"], "correct": 0 },
+            { "q": "Quale fiume attraversa Roma?", "answers": ["Tevere", "Po", "Arno", "Adige"], "correct": 0 },
+            { "q": "In quale regione si trova il Vesuvio?", "answers": ["Campania", "Sicilia", "Calabria", "Lazio"], "correct": 0 },
+            { "q": "Qual è l'isola più grande d'Italia?", "answers": ["Sicilia", "Sardegna", "Elba", "Capri"], "correct": 0 },
+            { "q": "Quale lago è il più grande d'Italia?", "answers": ["Lago di Garda", "Lago di Como", "Lago Maggiore", "Lago Trasimeno"], "correct": 0 },
+            { "q": "In quale regione si trova Matera?", "answers": ["Basilicata", "Puglia", "Calabria", "Molise"], "correct": 0 },
+            { "q": "Quale catena montuosa attraversa l'Italia?", "answers": ["Appennini", "Alpi", "Dolomiti", "Pirenei"], "correct": 0 },
+            { "q": "Qual è il vulcano attivo più alto d'Europa?", "answers": ["Etna", "Vesuvio", "Stromboli", "Vulcano"], "correct": 0 },
+            { "q": "Quante regioni ha l'Italia?", "answers": ["20", "18", "22", "15"], "correct": 0 },
+            { "q": "Quale città è nota come 'la Superba'?", "answers": ["Genova", "Venezia", "Napoli", "Palermo"], "correct": 0 }
+        ],
+        "2": [
+            { "q": "Qual è l'elemento chimico più abbondante nell'universo?", "answers": ["Idrogeno", "Elio", "Ossigeno", "Carbonio"], "correct": 0 },
+            { "q": "Quante ossa ha il corpo umano adulto?", "answers": ["206", "196", "216", "186"], "correct": 0 },
+            { "q": "Quale pianeta è il più vicino al Sole?", "answers": ["Mercurio", "Venere", "Marte", "Terra"], "correct": 0 },
+            { "q": "Cos'è la fotosintesi?", "answers": ["Conversione luce in energia", "Respirazione cellulare", "Divisione cellulare", "Evaporazione"], "correct": 0 },
+            { "q": "Quale gas respiriamo principalmente?", "answers": ["Azoto", "Ossigeno", "Anidride carbonica", "Argon"], "correct": 0 },
+            { "q": "Quanti cromosomi ha l'essere umano?", "answers": ["46", "44", "48", "42"], "correct": 0 },
+            { "q": "Qual è l'organo più grande del corpo?", "answers": ["Pelle", "Fegato", "Polmoni", "Intestino"], "correct": 0 },
+            { "q": "A che velocità viaggia la luce?", "answers": ["300.000 km/s", "150.000 km/s", "500.000 km/s", "1.000.000 km/s"], "correct": 0 },
+            { "q": "Quale animale è il più veloce al mondo?", "answers": ["Ghepardo", "Leone", "Falco pellegrino", "Lepre"], "correct": 0 },
+            { "q": "Cos'è il DNA?", "answers": ["Acido desossiribonucleico", "Acido ribonucleico", "Una proteina", "Un enzima"], "correct": 0 }
+        ],
+        "3": [
+            { "q": "Chi costruì le piramidi di Giza?", "answers": ["Antichi Egizi", "Romani", "Greci", "Sumeri"], "correct": 0 },
+            { "q": "In che anno cadde l'Impero Romano d'Occidente?", "answers": ["476 d.C.", "410 d.C.", "395 d.C.", "510 d.C."], "correct": 0 },
+            { "q": "Chi fu il primo imperatore romano?", "answers": ["Augusto", "Giulio Cesare", "Nerone", "Traiano"], "correct": 0 },
+            { "q": "Dove nacque la democrazia?", "answers": ["Atene", "Roma", "Sparta", "Cartagine"], "correct": 0 },
+            { "q": "Quale civiltà inventò la scrittura cuneiforme?", "answers": ["Sumeri", "Egizi", "Fenici", "Babilonesi"], "correct": 0 },
+            { "q": "Chi era Cleopatra?", "answers": ["Regina d'Egitto", "Dea greca", "Imperatrice romana", "Sacerdotessa"], "correct": 0 },
+            { "q": "Cosa avvenne nel 753 a.C.?", "answers": ["Fondazione di Roma", "Caduta di Troia", "Morte di Socrate", "Nascita di Atene"], "correct": 0 },
+            { "q": "Chi vinse la battaglia di Maratona?", "answers": ["Ateniesi", "Persiani", "Spartani", "Macedoni"], "correct": 0 },
+            { "q": "Quale popolo costruì Machu Picchu?", "answers": ["Inca", "Maya", "Aztechi", "Olmeca"], "correct": 0 },
+            { "q": "Chi era Alessandro Magno?", "answers": ["Re di Macedonia", "Imperatore romano", "Faraone egizio", "Re di Persia"], "correct": 0 }
+        ],
+        "4": [
+            { "q": "Chi scrisse la Divina Commedia?", "answers": ["Dante Alighieri", "Petrarca", "Boccaccio", "Ariosto"], "correct": 0 },
+            { "q": "In quante cantiche è divisa la Divina Commedia?", "answers": ["3", "4", "5", "2"], "correct": 0 },
+            { "q": "Chi scrisse 'I Promessi Sposi'?", "answers": ["Alessandro Manzoni", "Giacomo Leopardi", "Ugo Foscolo", "Giovanni Verga"], "correct": 0 },
+            { "q": "Quale poeta scrisse 'L'Infinito'?", "answers": ["Giacomo Leopardi", "Dante Alighieri", "Petrarca", "Carducci"], "correct": 0 },
+            { "q": "Chi è l'autore del Decameron?", "answers": ["Giovanni Boccaccio", "Dante", "Petrarca", "Machiavelli"], "correct": 0 },
+            { "q": "Come si chiama la guida di Dante nell'Inferno?", "answers": ["Virgilio", "Omero", "Beatrice", "Catone"], "correct": 0 },
+            { "q": "Chi scrisse 'Il Principe'?", "answers": ["Niccolò Machiavelli", "Lorenzo de' Medici", "Dante", "Guicciardini"], "correct": 0 },
+            { "q": "Quale movimento letterario guidò Verga?", "answers": ["Verismo", "Romanticismo", "Futurismo", "Decadentismo"], "correct": 0 },
+            { "q": "Chi vinse il Nobel per la letteratura nel 1934?", "answers": ["Luigi Pirandello", "Grazia Deledda", "Eugenio Montale", "Salvatore Quasimodo"], "correct": 0 },
+            { "q": "Chi scrisse 'Orlando Furioso'?", "answers": ["Ludovico Ariosto", "Torquato Tasso", "Petrarca", "Boccaccio"], "correct": 0 }
+        ],
+        "5": [
+            { "q": "Chi dipinse la Cappella Sistina?", "answers": ["Michelangelo", "Raffaello", "Leonardo", "Botticelli"], "correct": 0 },
+            { "q": "Dove si trova la Gioconda?", "answers": ["Louvre, Parigi", "Uffizi, Firenze", "Vaticano", "Prado, Madrid"], "correct": 0 },
+            { "q": "Chi progettò la cupola di Santa Maria del Fiore?", "answers": ["Brunelleschi", "Michelangelo", "Bramante", "Bernini"], "correct": 0 },
+            { "q": "Quale stile è caratterizzato da archi a sesto acuto?", "answers": ["Gotico", "Romanico", "Barocco", "Rinascimentale"], "correct": 0 },
+            { "q": "Chi scolpì il David di Firenze?", "answers": ["Michelangelo", "Donatello", "Bernini", "Cellini"], "correct": 0 },
+            { "q": "Quale artista è noto per le 'Ninfee'?", "answers": ["Claude Monet", "Renoir", "Van Gogh", "Cézanne"], "correct": 0 },
+            { "q": "Cos'è il Colosseo?", "answers": ["Anfiteatro romano", "Tempio", "Palazzo imperiale", "Acquedotto"], "correct": 0 },
+            { "q": "Chi fu l'architetto della Basilica di San Pietro?", "answers": ["Bramante e Michelangelo", "Bernini", "Borromini", "Palladio"], "correct": 0 },
+            { "q": "Quale movimento artistico fondò Marinetti?", "answers": ["Futurismo", "Cubismo", "Dadaismo", "Surrealismo"], "correct": 0 },
+            { "q": "Dove si trova 'L'Ultima Cena' di Leonardo?", "answers": ["Milano", "Firenze", "Roma", "Venezia"], "correct": 0 }
+        ],
+        "6": [
+            { "q": "Chi compose le 'Quattro Stagioni'?", "answers": ["Antonio Vivaldi", "Mozart", "Bach", "Beethoven"], "correct": 0 },
+            { "q": "Chi diresse 'La dolce vita'?", "answers": ["Federico Fellini", "Visconti", "De Sica", "Pasolini"], "correct": 0 },
+            { "q": "Quale strumento suonava Paganini?", "answers": ["Violino", "Pianoforte", "Violoncello", "Flauto"], "correct": 0 },
+            { "q": "Chi scrisse l'opera 'Aida'?", "answers": ["Giuseppe Verdi", "Puccini", "Rossini", "Donizetti"], "correct": 0 },
+            { "q": "Quale film vinse l'Oscar con Roberto Benigni?", "answers": ["La vita è bella", "Il postino", "Cinema Paradiso", "Malèna"], "correct": 0 },
+            { "q": "Chi compose 'La Traviata'?", "answers": ["Giuseppe Verdi", "Puccini", "Bellini", "Rossini"], "correct": 0 },
+            { "q": "Quale regista creò 'Bicycle Thieves'?", "answers": ["Vittorio De Sica", "Fellini", "Rossellini", "Antonioni"], "correct": 0 },
+            { "q": "Chi è Ennio Morricone?", "answers": ["Compositore di colonne sonore", "Regista", "Attore", "Cantante"], "correct": 0 },
+            { "q": "Quale opera inizia con 'La donna è mobile'?", "answers": ["Rigoletto", "La Traviata", "Tosca", "Aida"], "correct": 0 },
+            { "q": "Chi diresse 'Il Padrino'?", "answers": ["Francis Ford Coppola", "Scorsese", "Spielberg", "Kubrick"], "correct": 0 }
+        ],
+        "7": [
+            { "q": "In che anno Colombo scoprì l'America?", "answers": ["1492", "1482", "1502", "1472"], "correct": 0 },
+            { "q": "Chi inventò la stampa a caratteri mobili?", "answers": ["Gutenberg", "Leonardo", "Galileo", "Caxton"], "correct": 0 },
+            { "q": "Quando iniziò la Rivoluzione Francese?", "answers": ["1789", "1776", "1799", "1815"], "correct": 0 },
+            { "q": "Chi fu il primo re d'Italia unita?", "answers": ["Vittorio Emanuele II", "Garibaldi", "Cavour", "Mazzini"], "correct": 0 },
+            { "q": "Cosa fu la Peste Nera?", "answers": ["Epidemia del 1347", "Una guerra", "Una carestia", "Un terremoto"], "correct": 0 },
+            { "q": "Chi guidò i Mille?", "answers": ["Giuseppe Garibaldi", "Cavour", "Mazzini", "Vittorio Emanuele"], "correct": 0 },
+            { "q": "Quando cadde il Muro di Berlino?", "answers": ["1989", "1991", "1985", "1990"], "correct": 0 },
+            { "q": "Chi fu Marco Polo?", "answers": ["Esploratore veneziano", "Imperatore", "Papa", "Artista"], "correct": 0 },
+            { "q": "Cosa furono le Crociate?", "answers": ["Spedizioni militari religiose", "Fiere commerciali", "Tornei", "Pellegrinaggi"], "correct": 0 },
+            { "q": "In che anno finì la Prima Guerra Mondiale?", "answers": ["1918", "1919", "1917", "1920"], "correct": 0 }
+        ],
+        "8": [
+            { "q": "Chi è Zeus nella mitologia greca?", "answers": ["Re degli dei", "Dio del mare", "Dio della guerra", "Dio del sole"], "correct": 0 },
+            { "q": "Chi era il minotauro?", "answers": ["Creatura mezzo uomo mezzo toro", "Un gigante", "Un drago", "Un centauro"], "correct": 0 },
+            { "q": "Chi costruì il labirinto di Creta?", "answers": ["Dedalo", "Icaro", "Minosse", "Teseo"], "correct": 0 },
+            { "q": "Quale eroe uccise Medusa?", "answers": ["Perseo", "Ercole", "Teseo", "Achille"], "correct": 0 },
+            { "q": "Cos'è il Valhalla?", "answers": ["Paradiso dei guerrieri norreni", "Inferno greco", "Città degli dei romani", "Tempio egizio"], "correct": 0 },
+            { "q": "Chi era Odisseo?", "answers": ["Re di Itaca", "Re di Sparta", "Re di Troia", "Re di Atene"], "correct": 0 },
+            { "q": "Quale animale era sacro per gli Egizi?", "answers": ["Gatto", "Cane", "Cavallo", "Aquila"], "correct": 0 },
+            { "q": "Chi era Thor?", "answers": ["Dio del tuono norreno", "Dio greco", "Faraone", "Eroe romano"], "correct": 0 },
+            { "q": "Cos'è la Fenice?", "answers": ["Uccello che rinasce dalle ceneri", "Drago", "Serpente marino", "Unicorno"], "correct": 0 },
+            { "q": "Chi fu Romolo?", "answers": ["Fondatore leggendario di Roma", "Primo imperatore", "Un dio", "Un filosofo"], "correct": 0 }
+        ],
+        "9": [
+            { "q": "Chi inventò la lampadina?", "answers": ["Thomas Edison", "Tesla", "Bell", "Marconi"], "correct": 0 },
+            { "q": "Chi formulò la teoria della relatività?", "answers": ["Albert Einstein", "Newton", "Galileo", "Hawking"], "correct": 0 },
+            { "q": "Chi inventò il telefono?", "answers": ["Antonio Meucci", "Bell", "Edison", "Marconi"], "correct": 0 },
+            { "q": "Cosa scoprì Galileo con il telescopio?", "answers": ["Lune di Giove", "Anelli di Saturno", "Plutone", "La Via Lattea"], "correct": 0 },
+            { "q": "Chi inventò la radio?", "answers": ["Guglielmo Marconi", "Tesla", "Edison", "Hertz"], "correct": 0 },
+            { "q": "Cosa formulò Newton?", "answers": ["Legge di gravitazione universale", "Relatività", "Termodinamica", "Elettromagnetismo"], "correct": 0 },
+            { "q": "Chi scoprì la penicillina?", "answers": ["Alexander Fleming", "Pasteur", "Koch", "Jenner"], "correct": 0 },
+            { "q": "In che anno l'uomo andò sulla Luna?", "answers": ["1969", "1971", "1967", "1973"], "correct": 0 },
+            { "q": "Chi inventò la pila elettrica?", "answers": ["Alessandro Volta", "Galvani", "Ampère", "Faraday"], "correct": 0 },
+            { "q": "Cos'è il metodo scientifico?", "answers": ["Osservazione, ipotesi, esperimento", "Solo teoria", "Solo pratica", "Intuizione"], "correct": 0 }
+        ],
+        "10": [
+            { "q": "Qual è la capitale d'Italia?", "answers": ["Roma", "Milano", "Napoli", "Firenze"], "correct": 0 },
+            { "q": "Chi dipinse 'La nascita di Venere'?", "answers": ["Botticelli", "Raffaello", "Leonardo", "Michelangelo"], "correct": 0 },
+            { "q": "Qual è la formula dell'acqua?", "answers": ["H₂O", "CO₂", "NaCl", "O₂"], "correct": 0 },
+            { "q": "Chi scrisse l'Eneide?", "answers": ["Virgilio", "Omero", "Ovidio", "Cicerone"], "correct": 0 },
+            { "q": "Quando fu proclamata la Repubblica Italiana?", "answers": ["1946", "1948", "1943", "1945"], "correct": 0 },
+            { "q": "Quale pianeta ha gli anelli?", "answers": ["Saturno", "Giove", "Urano", "Nettuno"], "correct": 0 },
+            { "q": "Chi compose 'La Bohème'?", "answers": ["Giacomo Puccini", "Verdi", "Rossini", "Donizetti"], "correct": 0 },
+            { "q": "Cos'è il Rinascimento?", "answers": ["Rinascita culturale dal XIV secolo", "Periodo romano", "Era medievale", "Rivoluzione industriale"], "correct": 0 },
+            { "q": "Chi era Leonardo da Vinci?", "answers": ["Genio universale del Rinascimento", "Solo pittore", "Solo scienziato", "Solo architetto"], "correct": 0 },
+            { "q": "Quale mare bagna l'Italia a est?", "answers": ["Adriatico", "Tirreno", "Ligure", "Ionio"], "correct": 0 }
+        ]
+    }
+}
