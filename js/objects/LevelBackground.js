@@ -251,7 +251,7 @@ FloQuest.LevelBackground = {
                     .setBlendMode(Phaser.BlendModes.ADD)
                     .setAlpha(Math.min(0.5, intensity * 0.2))
                     .setDepth(6);
-                glowSprite.resetPipeline(true);
+                glowSprite.setLighting(false);
                 glowSprite.setTint(colorNum);
                 created.sprites.push(glowSprite);
             }

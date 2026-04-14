@@ -37,8 +37,7 @@ FloQuest.GameScene = class GameScene extends Phaser.Scene {
         var H = CFG.VIEWPORT_H;
         var CENTER_Y = H / 2;
 
-        // Ensure pipeline is registered
-        FloQuest.LightPipeline.register(this);
+        // Ensure normal maps are attached (Phaser 4 built-in lighting)
         FloQuest.Player.setupNormalMaps(this);
 
         // Lighting — enable before background so level lights can be added

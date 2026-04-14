@@ -72,10 +72,7 @@ FloQuest.BootScene = class BootScene extends Phaser.Scene {
         // Generate procedural textures (used by menu/UI scenes)
         FloQuest.TextureGenerator.generate(this);
 
-        // Register the lit-sprite pipeline
-        FloQuest.LightPipeline.register(this);
-
-        // Attach normal maps to spritesheet textures
+        // Attach normal maps to spritesheet textures (Phaser 4 uses them via setLighting)
         FloQuest.Player.setupNormalMaps(this);
 
         // Create all player animations (global, shared across scenes)

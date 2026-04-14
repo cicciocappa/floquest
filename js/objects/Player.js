@@ -80,7 +80,7 @@ FloQuest.Player = (function() {
         createSprite: function(scene, x, y) {
             var sprite = scene.add.sprite(x, y, 'idle');
             sprite.setScale(FloQuest.Config.SPRITE_SCALE);
-            sprite.setPipeline('LitSpritePipeline');
+            sprite.setLighting(true);
             sprite.setDepth(2);
             sprite.play('anim_idle');
             return sprite;
