@@ -1,6 +1,7 @@
 var FloQuest = FloQuest || {};
 
-// Questions are now loaded from data/questions.json via BootScene.
-// FloQuest.Questions is set dynamically when a journey is selected.
-// This file is kept for backward compatibility during the transition.
+// Questions are fetched from the Cloudflare Worker API (see QuestionsAPI.js)
+// when the player selects a journey. FloQuest.Questions and
+// FloQuest.BonusQuestions are populated at that point.
 FloQuest.Questions = FloQuest.Questions || {};
+FloQuest.BonusQuestions = FloQuest.BonusQuestions || {};

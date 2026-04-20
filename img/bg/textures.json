@@ -4,6 +4,10 @@
     "path": "statue.png"
   },
   {
+    "name": "statue_anubi",
+    "path": "statue_anubi.png"
+  },
+  {
     "name": "temple_wall",
     "path": "temple_wall.png"
   },
@@ -20,8 +24,8 @@
     "path": "statue_back.png"
   },
   {
-    "name": "statue_anubi",
-    "path": "statue_anubi.png"
+    "name": "fragments2",
+    "path": "fragments2.png"
   },
   {
     "name": "Torch Animated",
@@ -47,8 +51,8 @@
     "path": "broken_statue.png"
   },
   {
-    "name": "fragments2",
-    "path": "fragments2.png"
+    "name": "darts",
+    "path": "darts.png"
   },
   {
     "name": "broken_statue_base",
@@ -71,8 +75,8 @@
     "path": "jar1.png"
   },
   {
-    "name": "darts",
-    "path": "darts.png"
+    "name": "papiri",
+    "path": "papiri.png"
   },
   {
     "name": "jar3",
@@ -81,5 +85,33 @@
   {
     "name": "scroll",
     "path": "scroll.png"
+  },
+  {
+    "name": "statuette",
+    "path": "statuette.png"
+  },
+  {
+    "name": "canopio",
+    "path": "canopio.png"
+  },
+  {
+    "name": "papiri2",
+    "path": "papiri2.png"
+  },
+  {
+    "name": "statuetta_rotta",
+    "path": "statuetta_rotta.png"
+  },
+  {
+    "name": "sarcofago",
+    "path": "sarcofago.png"
+  },
+  {
+    "name": "statua_thoth",
+    "path": "statua_thoth.png"
+  },
+  {
+    "name": "statua_thoth_back",
+    "path": "statua_thoth_back.png"
   }
 ]

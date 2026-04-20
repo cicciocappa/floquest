@@ -1,1 +1,19 @@
-claude --resume e8bdbd8e-0706-41b6-be4b-967761fceca7
+ ora non ci resta che reintrodurre le animazioni per timeout e per morte, con il ritorno poi alla posizione precedente.                                                                                                                                                                                                      
+
+● Bene. Per restare nel pattern "aggiungiamo gradualmente" ti propongo questa struttura minimale:
+
+  Su risposta corretta: flusso attuale invariato (corridoio + ritorno + Q successiva).
+
+  Su risposta sbagliata: diag verso corsia scelta → 2 walk_right nel corridoio → walk_to_death/walk_to_falling + death/falling (da trapAnimType del livello) → fade out → teleport a start-of-decision-window per Q_n (= lockX − 300) → idle → fade in → ri-mostro Q_n → re-fa 3 walk_right → lockIn di nuovo.
+
+  Su timeout: fall_in_hole in place (al lockX, senza walk in corsia) → stessa respawn logic.
+
+  Vite: lives-- dopo ogni trap. Se lives ≤ 0 → GameOverScene.
+
+  Non includo ancora: trap sprites del livello (darts/stalactiti/ecc), first-try bonus, cambio depth del player in corsia. Li aggiungiamo dopo se tutto funziona.
+
+  Procedo?
+
+✻ Brewed for 2m 42s
+claude --resume 2abdfbc1-8aa3-4612-b68b-fe06e82658c2
+

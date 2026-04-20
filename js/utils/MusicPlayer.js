@@ -88,53 +88,179 @@ FloQuest.MusicPlayer = (function() {
 
     var SONGS = {
 
-        // ─── Tempio / Default — misterioso, avventuroso ───
+        // ─── Tempio / Default — antico Egitto, mistero, scala Frigia Dominante (D Eb F# G A Bb C) ───
+        // Struttura: A (4 battute, misteriosa) → A' (4 battute, variazione più fluida) →
+        //            Ponte (4 battute, tensione crescente, drone si sposta su Bb/F) → A'' (4 battute, ritorno e chiusura)
         temple: {
-            bpm: 100,
-            patternLength: 32,
+            bpm: 88,
+            patternLength: 128,
             tracks: [
+                // Melodia: flauto (ney-like), frasi modali con il caratteristico intervallo di 2a aumentata Eb-F#
                 {
                     name: 'melody',
-                    preset: 'brass',
-                    volume: 0.35,
+                    preset: 'flute',
+                    volume: 0.32,
                     pattern: [
-                        'E4:2', null, 'G4:2', null, 'A4:2', null, 'B4:2', null,
-                        'A4:2', null, 'G4:2', null, 'E4:4', null, null, null,
-                        'D4:2', null, 'E4:2', null, 'G4:2', null, 'A4:2', null,
-                        'G4:2', null, 'E4:2', null, 'D4:4', null, null, null
+                        // ── A (bb. 1-4): tema principale, ascesa e turn egizio ──
+                        'D4:2', null, 'Eb4:2', null, 'F#4:3', null, null, 'G4',
+                        'A4:4', null, null, null, 'Bb4:2', null, 'A4:2', null,
+                        'G4:2', null, 'F#4:2', null, 'Eb4:3', null, null, 'D4',
+                        'Eb4:2', null, 'D4:2', null, 'D4:4', null, null, null,
+                        // ── A' (bb. 5-8): variazione con apertura verso C5 ──
+                        'A4:2', null, 'Bb4:2', null, 'C5:3', null, null, 'Bb4',
+                        'A4:4', null, null, null, 'G4:2', null, 'F#4:2', null,
+                        'Eb4:2', null, 'F#4:2', null, 'Eb4:2', null, 'D4:2', null,
+                        'D4:4', null, null, null, null, null, null, null,
+                        // ── Ponte (bb. 9-12): tensione, melodia più decisa, salita a D5 ──
+                        'A4:2', null, 'Bb4:2', null, 'D5:3', null, null, 'C5',
+                        'Bb4:2', null, 'A4:2', null, 'G4:4', null, null, 'A4',
+                        'Bb4:2', null, 'C5:2', null, 'D5:2', null, 'Eb5:2', null,
+                        'D5:4', null, null, null, 'C5:2', null, 'Bb4:2', null,
+                        // ── A'' (bb. 13-16): risoluzione sul tonico con decorazione finale ──
+                        'A4:2', null, 'G4:2', null, 'F#4:3', null, null, 'Eb4',
+                        'F#4:2', null, 'Eb4:2', null, 'D4:4', null, null, null,
+                        'Eb4:2', null, 'D4:2', null, 'Eb4:2', null, 'F#4:2', null,
+                        'D4:4', null, null, null, null, null, null, null
                     ]
                 },
+                // Controcanto: vibrafono — guizzi luccicanti tipo sistro; più attivo nel ponte
+                {
+                    name: 'shimmer',
+                    preset: 'vibes',
+                    volume: 0.18,
+                    pattern: [
+                        // A — quasi silenzioso, poi breve eco
+                        null, null, null, null, null, null, null, null,
+                        null, null, null, null, null, null, null, null,
+                        null, null, null, null, null, null, null, null,
+                        'A5', 'G5', 'F#5', 'Eb5', 'D5:2', null, null, null,
+                        // A' — risposta nel registro acuto
+                        null, null, null, null, null, null, null, null,
+                        null, null, null, null, null, null, null, null,
+                        null, null, null, null, null, null, null, null,
+                        null, 'Bb5', 'A5', 'G5', 'F#5:2', null, 'D5:2', null,
+                        // Ponte — call-and-response serrato col flauto
+                        null, null, null, 'A5', 'Bb5:2', null, null, null,
+                        null, null, null, 'D6', 'C6', 'Bb5', 'A5:2', null,
+                        null, null, null, null, 'D6:2', null, 'Eb6:2', null,
+                        null, null, null, 'Bb5', 'A5', 'G5', 'F#5:2', null,
+                        // A'' — decorazione di chiusura
+                        null, null, null, null, null, null, null, null,
+                        'A5:2', null, 'G5', 'F#5', 'Eb5:2', null, 'D5:2', null,
+                        null, null, null, null, null, null, null, null,
+                        null, null, 'F#5', 'Eb5', 'D5:4', null, null, null
+                    ]
+                },
+                // Drone tonico-dominante — si sposta su Bb/F durante il ponte per creare tensione
+                {
+                    name: 'drone',
+                    preset: 'strings',
+                    volume: 0.20,
+                    pattern: [
+                        // A
+                        'D3:8', null, null, null, null, null, null, null,
+                        'A3:8', null, null, null, null, null, null, null,
+                        'D3:8', null, null, null, null, null, null, null,
+                        'A3:8', null, null, null, null, null, null, null,
+                        // A'
+                        'D3:8', null, null, null, null, null, null, null,
+                        'Bb3:8', null, null, null, null, null, null, null,
+                        'A3:8', null, null, null, null, null, null, null,
+                        'D3:8', null, null, null, null, null, null, null,
+                        // Ponte — drone si sposta sul vi (Bb) poi IV (G) creando sospensione
+                        'Bb3:8', null, null, null, null, null, null, null,
+                        'F3:8', null, null, null, null, null, null, null,
+                        'G3:8', null, null, null, null, null, null, null,
+                        'A3:8', null, null, null, null, null, null, null,
+                        // A'' — ritorno graduale alla tonica
+                        'D3:8', null, null, null, null, null, null, null,
+                        'A3:8', null, null, null, null, null, null, null,
+                        'Bb3:8', null, null, null, null, null, null, null,
+                        'D3:8', null, null, null, null, null, null, null
+                    ]
+                },
+                // Basso: pulsante, modale; ponte con cammino più scorrevole
                 {
                     name: 'bass',
                     preset: 'bass',
-                    volume: 0.4,
+                    volume: 0.38,
                     pattern: [
-                        'E2:4', null, null, null, 'A2:4', null, null, null,
-                        'E2:4', null, null, null, 'B2:4', null, null, null,
-                        'D2:4', null, null, null, 'G2:4', null, null, null,
-                        'A2:4', null, null, null, 'E2:4', null, null, null
+                        // A
+                        'D2:4', null, null, null, 'A2:2', null, 'D2:2', null,
+                        'D2:4', null, null, null, 'Bb2:4', null, null, null,
+                        'A2:4', null, null, null, 'D2:2', null, 'F2:2', null,
+                        'A2:4', null, null, null, 'D2:4', null, null, null,
+                        // A'
+                        'D2:4', null, null, null, 'A2:2', null, 'C3:2', null,
+                        'F2:4', null, null, null, 'Eb2:4', null, null, null,
+                        'Bb2:4', null, null, null, 'A2:4', null, null, null,
+                        'D2:4', null, null, null, 'D2:4', null, null, null,
+                        // Ponte — walking bass che tesse verso l'alto
+                        'Bb2:2', null, 'A2:2', null, 'G2:2', null, 'F2:2', null,
+                        'Bb1:4', null, null, null, 'F2:4', null, null, null,
+                        'G2:2', null, 'A2:2', null, 'Bb2:2', null, 'C3:2', null,
+                        'A2:4', null, null, null, 'A1:4', null, null, null,
+                        // A''
+                        'D2:4', null, null, null, 'A2:2', null, 'D2:2', null,
+                        'A2:4', null, null, null, 'Bb2:2', null, 'A2:2', null,
+                        'G2:2', null, 'F2:2', null, 'Eb2:2', null, 'D2:2', null,
+                        'D2:4', null, null, null, 'D2:4', null, null, null
                     ]
                 },
+                // Kick — pulsazione rituale tipo darbuka; si infittisce nel ponte
                 {
-                    name: 'perc',
+                    name: 'kick',
                     preset: 'kick',
-                    volume: 0.25,
+                    volume: 0.24,
                     pattern: [
+                        // A
+                        'C2', null, null, null, null, null, null, null,
                         'C2', null, null, null, 'C2', null, null, null,
+                        'C2', null, null, null, null, null, null, null,
+                        'C2', null, null, null, 'C2', null, 'C2', null,
+                        // A'
+                        'C2', null, null, null, null, null, null, null,
                         'C2', null, null, null, 'C2', null, null, null,
-                        'C2', null, null, null, 'C2', null, null, null,
-                        'C2', null, null, null, 'C2', null, null, null
+                        'C2', null, null, null, null, null, null, null,
+                        'C2', null, null, null, 'C2', null, 'C2', 'C2',
+                        // Ponte — più denso, spinge verso il ritorno
+                        'C2', null, 'C2', null, 'C2', null, null, null,
+                        'C2', null, null, null, 'C2', null, 'C2', null,
+                        'C2', null, 'C2', null, 'C2', null, 'C2', null,
+                        'C2', null, 'C2', null, 'C2', 'C2', 'C2', 'C2',
+                        // A''
+                        'C2', null, null, null, null, null, null, null,
+                        'C2', null, null, null, 'C2', null, 'C2', null,
+                        'C2', null, null, null, null, null, null, null,
+                        'C2', null, null, null, 'C2', null, 'C2', 'C2'
                     ]
                 },
+                // Hihat — sonagli/sistro sugli off-beat; fill intenso a fine ponte
                 {
                     name: 'hihat',
                     preset: 'hihat',
-                    volume: 0.12,
+                    volume: 0.09,
                     pattern: [
+                        // A
                         null, null, 'C4', null, null, null, 'C4', null,
+                        null, null, 'C4', null, null, null, 'C4', 'C4',
                         null, null, 'C4', null, null, null, 'C4', null,
+                        null, null, 'C4', null, null, null, 'C4', 'C4',
+                        // A'
                         null, null, 'C4', null, null, null, 'C4', null,
-                        null, null, 'C4', null, null, null, 'C4', null
+                        null, null, 'C4', null, null, null, 'C4', 'C4',
+                        null, null, 'C4', null, null, null, 'C4', null,
+                        null, 'C4', 'C4', null, null, 'C4', 'C4', 'C4',
+                        // Ponte — pattern guida
+                        'C4', null, 'C4', null, 'C4', 'C4', 'C4', null,
+                        null, 'C4', 'C4', null, 'C4', null, 'C4', 'C4',
+                        'C4', null, 'C4', null, 'C4', 'C4', 'C4', null,
+                        'C4', 'C4', 'C4', 'C4', 'C4', 'C4', 'C4', 'C4',
+                        // A''
+                        null, null, 'C4', null, null, null, 'C4', null,
+                        null, null, 'C4', null, null, null, 'C4', 'C4',
+                        null, null, 'C4', null, null, null, 'C4', null,
+                        null, null, 'C4', null, 'C4', null, 'C4', 'C4'
                     ]
                 }
             ]

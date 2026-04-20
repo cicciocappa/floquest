@@ -21,6 +21,8 @@ var FloQuest = FloQuest || {};
             FloQuest.RecordsScene,
             FloQuest.LevelIntroScene,
             FloQuest.GameScene,
+            FloQuest.SlideshowScene,
+            FloQuest.BonusScene,
             FloQuest.LevelCompleteScene,
             FloQuest.GameOverScene,
             FloQuest.VictoryScene

@@ -213,12 +213,6 @@ body {
     margin-bottom: 6px;
 }
 
-.intro-level-theme {
-    font-size: 12px;
-    color: #8888aa;
-    margin-bottom: 12px;
-}
-
 .intro-narration {
     font-size: 14px;
     color: #ccccdd;
@@ -245,4 +239,104 @@ body {
 
 .intro-start-btn:hover {
     background: #ddb85c;
+}
+
+/* =============================================================
+   Narrative mode (QuestionUI) — shown in place of answers for
+   intro / ending / death / timeout / game-over prompts.
+   ============================================================= */
+
+.qp-narrative-btn {
+    display: inline-block;
+    align-self: center;
+    margin-top: 12px;
+    font-family: monospace;
+    font-size: 16px;
+    font-weight: bold;
+    color: #1a1a2e;
+    background: #c9a84c;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 36px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: background 0.15s;
+}
+
+.qp-narrative-btn:hover {
+    background: #ddb85c;
+}
+
+#question-panel.narrative-mode .qp-question {
+    font-size: 15px;
+    line-height: 1.6;
+    text-align: left;
+    padding: 0 4px;
+    margin-bottom: 0;
+}
+
+#question-panel.narrative-mode .qp-info-col .qp-timer {
+    display: none;
+}
+
+/* =============================================================
+   Slideshow mode — reposition panel (right-half desktop,
+   bottom-half portrait mobile). Also fade/slide transitions.
+   ============================================================= */
+
+#question-panel.slideshow-mode {
+    /* Desktop (landscape): left half, vertically centered */
+    top: 50%;
+    left: 3%;
+    right: auto;
+    transform: translateY(-50%);
+    width: min(45vw, 620px);
+    max-height: 90vh;
+    overflow: auto;
+    border-radius: 8px;
+    border-top: 1px solid rgba(201, 168, 76, 0.4);
+    transition: opacity 0.4s ease;
+}
+
+#question-panel.slideshow-mode .qp-main-col {
+    padding: 16px 18px;
+}
+
+#question-panel.slideshow-mode .qp-question {
+    font-size: 18px;
+    line-height: 1.5;
+}
+
+#question-panel.slideshow-mode .qp-answer {
+    font-size: 15px;
+    padding: 8px 10px;
+}
+
+/* Fade animation on show (content swap) */
+@keyframes qp-fade-in {
+    from { opacity: 0; transform: translateY(-50%) scale(0.98); }
+    to   { opacity: 1; transform: translateY(-50%) scale(1); }
+}
+
+#question-panel.slideshow-mode {
+    animation: qp-fade-in 0.4s ease both;
+}
+
+/* Portrait / mobile: stack vertically — image above, panel below */
+@media (orientation: portrait) {
+    #question-panel.slideshow-mode {
+        top: auto;
+        bottom: 2%;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        width: 94vw;
+        max-height: 48vh;
+    }
+
+    @keyframes qp-fade-in {
+        from { opacity: 0; transform: translateX(-50%) scale(0.98); }
+        to   { opacity: 1; transform: translateX(-50%) scale(1); }
+    }
 }

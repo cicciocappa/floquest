@@ -173,8 +173,11 @@ FloQuest.LevelBackground = {
                     // Trap sprite (static image or tween-only): hide if configured, apply tween from values
                     if (el.trapHidden !== false) sprite.setVisible(false);
                     if (el.trapAnimType === 'tween' && el.trapTween) {
+                        // Editor position (el.x/el.y) wins for x/y — tw.from applies only to other props.
                         el.trapTween.forEach(function(tw) {
-                            if (tw.from != null) sprite[tw.prop] = tw.from;
+                            if (tw.from != null && tw.prop !== 'x' && tw.prop !== 'y') {
+                                sprite[tw.prop] = tw.from;
+                            }
                         });
                     }
                     created.trapSprites.push({

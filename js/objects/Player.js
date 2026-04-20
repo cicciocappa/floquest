@@ -26,7 +26,8 @@ FloQuest.Player = (function() {
         walk_down60_to_right:  { frames: 30,  cols: 8,  rows: 4,  loop: false },
         walk_to_death:         { frames: 8,   cols: 4,  rows: 2,  loop: false },
         walk_to_falling:       { frames: 8,   cols: 4,  rows: 2,  loop: false },
-        fall_in_hole:          { frames: 64,  cols: 8,  rows: 8,  loop: false }
+        fall_in_hole:          { frames: 64,  cols: 8,  rows: 8,  loop: false },
+        climb:                 { frames: 61,  cols: 8,  rows: 8,  loop: true  }
     };
 
     return {

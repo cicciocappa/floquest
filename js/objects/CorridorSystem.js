@@ -51,28 +51,21 @@ FloQuest.CorridorSystem = (function() {
     function calcMovement(corridorIndex) {
         var c = CORRIDORS[corridorIndex];
         var targetDy = c.y - _centerY;
+        var DIAG_DX = FloQuest.Config.DIAG_DX;
         var totalDiagFrames = 30 + 30 * c.approachCycles + 30;
+
+        // Fixed horizontal distance, dy computed to reach corridor Y
+        var dxPerFrame = DIAG_DX / totalDiagFrames;
         var dyPerFrame = targetDy / totalDiagFrames;
-        var angleRad = (c.angle * Math.PI) / 180;
-        var dxPerFrame = Math.abs(dyPerFrame) / Math.tan(angleRad);
-        var totalDiagDx = dxPerFrame * totalDiagFrames;
+
         return {
             transIn:  { dx: dxPerFrame * 30, dy: dyPerFrame * 30, frames: 30 },
             walk:     { dx: dxPerFrame * 30 * c.approachCycles,
                         dy: dyPerFrame * 30 * c.approachCycles,
                         frames: 30 * c.approachCycles },
             transOut: { dx: dxPerFrame * 30, dy: dyPerFrame * 30, frames: 30 },
-            totalDiagDx: totalDiagDx
+            totalDiagDx: DIAG_DX
         };
-    }
-
-    function getMaxDiagRoundtrip() {
-        var max = 0;
-        for (var i = 0; i < CORRIDORS.length; i++) {
-            var m = calcMovement(i);
-            max = Math.max(max, m.totalDiagDx * 2);
-        }
-        return max;
     }
 
     return {
@@ -80,7 +73,6 @@ FloQuest.CorridorSystem = (function() {
         configure: configure,
         getCorridor: function(index) { return CORRIDORS[index]; },
         calcMovement: calcMovement,
-        getMaxDiagRoundtrip: getMaxDiagRoundtrip,
         getCenterY: function() { return _centerY; },
         getSkyHeight: function() { return _skyHeight; }
     };

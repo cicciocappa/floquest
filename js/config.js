@@ -12,7 +12,12 @@ FloQuest.Config = {
     MAX_LIGHTS: 10,
 
     // Gameplay
-    LIVES_PER_LEVEL: 3,
+    LIVES_PER_LEVEL: 3,              // fallback — the actual value comes from LIVES_PER_DIFFICULTY
+    LIVES_PER_DIFFICULTY: {
+        easy:   3,
+        normal: 4,
+        hard:   5
+    },
     TOTAL_QUESTIONS: 10,
 
     // Walk
@@ -20,10 +25,18 @@ FloQuest.Config = {
     WALK_CYCLES_APPROACH: 3,
     WALK_CYCLES_QUESTION: 12,
     WALK_CYCLES_PRE_SELECTED: 3,
+    DIAG_DX: 100,           // total horizontal px across the 3-cycle diagonal unit (transIn + diag + transOut)
+
+    // Minimal loop — used by the simplified GameScene flow
+    STEPS_PER_QUESTION: 5,  // walk_right cycles per question (1 cycle = 1s = WALK_RIGHT_PX)
 
     // Bonus phase
-    BONUS_DURATION: 60,
-    BONUS_QUESTIONS: 16,
+    BONUS_DURATION: 60,          // seconds on the climbing-wall timer
+    BONUS_QUESTIONS: 12,         // total binary questions in a bonus run
+    BONUS_ANSWERS: 2,
+    BONUS_AFTER_LEVELS: [3, 6, 9],
+    BONUS_WALL_HEIGHT_DEFAULT: 2400,   // px — height the wall scrolls across in 60s
+    BONUS_WALL_WIDTH: 640,
 
     // World
     WORLD_W: 40000,
@@ -32,16 +45,18 @@ FloQuest.Config = {
     BG_START_TILE: 1024,   // x where first tile begins (after picking image)
     BG_WIDTH_TILE: 1980,   // width of each repeating tile
 
-    // Score
+    // Score — new formula: levelScore = max(0, LEVEL_BASE - errors*ERROR_PENALTY) * difficultyFactor
     SCORE: {
-        BASE: 100,
-        SPEED_BONUS: 50,
-        FIRST_TRY_BONUS: 50,
-        LEVEL_COMPLETE: 200,
-        PERFECT_LEVEL: 500,
-        BONUS_PER_COIN: 50
+        LEVEL_BASE: 1000,
+        ERROR_PENALTY: 100,
+        BONUS_COMPLETE: 1000,       // awarded when all BONUS_QUESTIONS answered without mistakes
+        BONUS_PER_STREAK: 50        // per-question fallback if the timer expires mid-streak
     },
-    SPEED_THRESHOLD: 5000,
+    DIFFICULTY_FACTOR: {
+        easy:   1.0,
+        normal: 1.5,
+        hard:   2.0
+    },
     TIMER_SECONDS: 15,
 
     // Trap animation mapping (level trap type → player animation type)

@@ -109,6 +109,29 @@ FloQuest.JourneySelectScene = class JourneySelectScene extends Phaser.Scene {
             this._createRadio(rx, radioY, difficulties[d], currentDiff === difficulties[d].key);
         }
 
+        // --- Animations mode selection ---
+        var animY = radioY + 65;
+
+        this.add.text(W / 2, animY, 'Animazioni', {
+            fontSize: '22px',
+            fontFamily: 'VCR, monospace',
+            color: '#1a3a5c'
+        }).setOrigin(0.5);
+
+        var animModes = [
+            { key: 'full', label: 'Complete' },
+            { key: 'reduced', label: 'Ridotte' },
+            { key: 'none', label: 'Nessuna' }
+        ];
+        var currentAnim = FloQuest.ScoreManager.getAnimationsMode();
+        var animRadioY = animY + 45;
+
+        this._animRadioButtons = [];
+        for (var a = 0; a < animModes.length; a++) {
+            var ax = radioStartX + a * radioSpacing;
+            this._createAnimRadio(ax, animRadioY, animModes[a], currentAnim === animModes[a].key);
+        }
+
         // --- Back button ---
         this._createButton(W / 2, H - 80, 'Indietro', function() {
             FloQuest.AudioManager.play('click');
@@ -160,15 +183,43 @@ FloQuest.JourneySelectScene = class JourneySelectScene extends Phaser.Scene {
             bg.fillRoundedRect(x - w / 2, y - h / 2, w, h, 10);
             self._hidePreview();
         });
-        bg.on('pointerdown', function() {
+        bg.on('pointerdown', async function() {
+            if (self._starting) return;
+            self._starting = true;
+
             FloQuest.AudioManager.play('click');
             FloQuest.AudioManager.resume();
             FloQuest.ScoreManager.reset();
-            FloQuest.ScoreManager.setJourney(journey.id);
+
             self.cameras.main.fadeOut(500);
-            self.time.delayedCall(500, function() {
-                self.scene.start('LevelIntroScene', { level: 1 });
+            var fadePromise = new Promise(function(resolve) {
+                self.time.delayedCall(500, resolve);
             });
+
+            var lang = FloQuest.ScoreManager.getLanguage();
+            var diffKey = FloQuest.ScoreManager.getDifficulty();
+
+            try {
+                var data = await FloQuest.QuestionsAPI.fetchJourney(diffKey, lang);
+                FloQuest.Questions = data.regular;
+                FloQuest.BonusQuestions = data.bonus;
+            } catch (e) {
+                console.error('Failed to fetch questions:', e);
+                self._starting = false;
+                self.cameras.main.fadeIn(300);
+                alert('Errore nel caricamento delle domande. Controlla la connessione e riprova.');
+                return;
+            }
+
+            await fadePromise;
+
+            FloQuest.ScoreManager.setJourney(journey.id);
+            var mode = FloQuest.ScoreManager.getAnimationsMode();
+            if (mode === 'none') {
+                self.scene.start('SlideshowScene', { level: 1 });
+            } else {
+                self.scene.start('LevelIntroScene', { level: 1 });
+            }
         });
     }
 
@@ -204,6 +255,45 @@ FloQuest.JourneySelectScene = class JourneySelectScene extends Phaser.Scene {
                 r.gfx.lineStyle(2, 0x1a3a5c, 1);
                 r.gfx.strokeCircle(r.x, r.y, radius);
                 if (r.key === diffData.key) {
+                    r.gfx.fillStyle(0x1a3a5c, 1);
+                    r.gfx.fillCircle(r.x, r.y, 6);
+                }
+            }
+        });
+    }
+
+    _createAnimRadio(x, y, modeData, selected) {
+        var self = this;
+        var radius = 10;
+
+        var gfx = this.add.graphics();
+        gfx.lineStyle(2, 0x1a3a5c, 1);
+        gfx.strokeCircle(x, y, radius);
+        if (selected) {
+            gfx.fillStyle(0x1a3a5c, 1);
+            gfx.fillCircle(x, y, 6);
+        }
+        gfx.setInteractive(new Phaser.Geom.Circle(x, y, radius + 8), Phaser.Geom.Circle.Contains);
+        gfx.input.cursor = 'pointer';
+
+        this.add.text(x, y + 20, modeData.label, {
+            fontSize: '14px',
+            fontFamily: 'VCR, monospace',
+            color: '#1a3a5c'
+        }).setOrigin(0.5);
+
+        var entry = { key: modeData.key, gfx: gfx, x: x, y: y };
+        this._animRadioButtons.push(entry);
+
+        gfx.on('pointerdown', function() {
+            FloQuest.AudioManager.play('click');
+            FloQuest.ScoreManager.setAnimationsMode(modeData.key);
+            for (var i = 0; i < self._animRadioButtons.length; i++) {
+                var r = self._animRadioButtons[i];
+                r.gfx.clear();
+                r.gfx.lineStyle(2, 0x1a3a5c, 1);
+                r.gfx.strokeCircle(r.x, r.y, radius);
+                if (r.key === modeData.key) {
                     r.gfx.fillStyle(0x1a3a5c, 1);
                     r.gfx.fillCircle(r.x, r.y, 6);
                 }

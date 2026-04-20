@@ -1,0 +1,8 @@
+name = "floquest-api"
+main = "worker.js"
+compatibility_date = "2024-11-06"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "floquest"
+database_id = "a72b8f44-8e12-4660-af9f-750c0d04fba3"

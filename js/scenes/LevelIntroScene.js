@@ -187,7 +187,9 @@ FloQuest.LevelIntroScene = class LevelIntroScene extends Phaser.Scene {
             FloQuest.ScoreManager.resetForLevel();
             self.cameras.main.fadeOut(500);
             self.time.delayedCall(500, function() {
-                self.scene.start('GameScene', { level: levelNum });
+                var mode = FloQuest.ScoreManager.getAnimationsMode();
+                var target = (mode === 'none') ? 'SlideshowScene' : 'GameScene';
+                self.scene.start(target, { level: levelNum });
             });
         });
 

@@ -25,10 +25,8 @@ FloQuest.GameScene = class GameScene extends Phaser.Scene {
         this.questions = FloQuest.Questions[this.levelNum];
 
         // Game state
-        this.lives = CFG.LIVES_PER_LEVEL;
+        this.lives = FloQuest.ScoreManager.getLivesForDifficulty();
         this.levelRunning = false;
-        this.firstTryMap = {};
-        this.questionStartTime = 0;
 
         // Trap animation type for this level
         this.trapAnimType = this.levelData.trapAnim || CFG.TRAP_ANIM[this.levelData.trap] || 'death';
@@ -190,9 +188,6 @@ FloQuest.GameScene = class GameScene extends Phaser.Scene {
             this.playerLight.x = this.player.x;
             this.playerLight.y = this.player.y - 30;
         }
-
-        // Update question timer display
-        this.questionUI.updateTimer();
     }
 
     // ===============================================================
@@ -253,22 +248,26 @@ FloQuest.GameScene = class GameScene extends Phaser.Scene {
                 scene.player.play('anim_' + animKey);
             }
 
-            // Tween position if needed
+            // Tween position if needed — resolve on tween onComplete so the player snaps
+            // to the exact target before the next step reads player.x (prevents cumulative drift).
             if (dx !== 0 || dy !== 0) {
+                var targetX = scene.player.x + dx;
+                var targetY = scene.player.y + dy;
                 scene.tweens.add({
                     targets: scene.player,
-                    x: scene.player.x + dx,
-                    y: scene.player.y + dy,
+                    x: targetX,
+                    y: targetY,
                     duration: duration,
-                    ease: 'Linear'
+                    ease: 'Linear',
+                    onComplete: function() {
+                        scene.player.x = targetX;
+                        scene.player.y = targetY;
+                        resolve();
+                    }
                 });
+            } else {
+                scene.time.delayedCall(duration, resolve);
             }
-
-            scene.time.delayedCall(duration, function() {
-                scene._log('step DONE: ' + animKey + ' x' + cycles,
-                    'dx=' + Math.round(dx || 0) + ' dy=' + Math.round(dy || 0));
-                resolve();
-            });
         });
     }
 
@@ -283,13 +282,133 @@ FloQuest.GameScene = class GameScene extends Phaser.Scene {
             duration: 1000,
             ease: 'Linear'
         }).then(function() {
-            scene._log('walkOneCycle DONE',
-                'moved ' + Math.round(scene.player.x - startX) + 'px');
+            // scene._log('walkOneCycle DONE', 'moved ' + Math.round(scene.player.x - startX) + 'px');
         });
     }
 
     get isWalking() {
         return FloQuest.Player.isWalking(this.player);
+    }
+
+    // ===============================================================
+    // Skip mode — always-on: click on answer jumps the player to the
+    // natural lock position of the visible question.
+    // ===============================================================
+
+    /**
+     * Show a question and arm skip tracking for it.
+     * lockX = the X at which this question would naturally lock in (end of its decision window).
+     * timerMs = countdown duration for the visible timer (omit / 0 / false = hide timer).
+     */
+    _showQuestionWithSkip(qIndex, lockX, timerMs) {
+        var CFG = FloQuest.Config;
+        this.questionUI.showQuestion(this.questions, qIndex, this.lives, CFG.TOTAL_QUESTIONS, timerMs || 0);
+        this._currentQIndex = qIndex;
+        this._currentQLockX = lockX;
+        this._skipClicked = false;
+        if (FloQuest.ScoreManager.getSkipAnimations()) {
+            var self = this;
+            this._skipPromise = this.questionUI.waitForAnswer().then(function() {
+                self._skipClicked = true;
+            });
+        } else {
+            this._skipPromise = null;
+        }
+    }
+
+    /**
+     * Run a step racing against skip. Returns true if skipped (and kills the tween).
+     * If skip is disarmed (_skipPromise null), runs as a plain step.
+     */
+    async _stepRaceSkip(anim, cycles, dx, dy) {
+        if (!this._skipPromise) {
+            await this.step(anim, cycles, dx, dy);
+            return false;
+        }
+        if (this._skipClicked) return true;
+        var stepPromise = this.step(anim, cycles, dx, dy);
+        var skipWon = await Promise.race([
+            stepPromise.then(function() { return false; }),
+            this._skipPromise.then(function() { return true; })
+        ]);
+        if (skipWon) this.tweens.killTweensOf(this.player);
+        return skipWon;
+    }
+
+    /** Walk N walk_right cycles, interruptible by skip. Returns true if skipped. */
+    async _walkRightSkipable(steps) {
+        var WPX = FloQuest.Config.WALK_RIGHT_PX;
+        for (var i = 0; i < steps; i++) {
+            if (await this._stepRaceSkip('walk_right', 1, WPX, 0)) return true;
+        }
+        return false;
+    }
+
+    /** Post-skip teleport: jump the player to the current question's natural lock X, centered Y. */
+    _handleSkipTeleport() {
+        this.player.x = this._currentQLockX;
+        this.player.y = FloQuest.CorridorSystem.getCenterY();
+        this.player.setDepth(2);
+        this.player.play('anim_walk_right', true);
+        this.questionUI.hideTimer();
+        this._log('SKIP Q' + (this._currentQIndex + 1) + ' → x=' + Math.round(this.player.x));
+    }
+
+    /**
+     * Fade out, teleport to targetX (centered Y, depth 2, idle), fade in.
+     * Used after timeout/death before retrying the current question.
+     */
+    async _respawn(targetX) {
+        var CENTER_Y = FloQuest.CorridorSystem.getCenterY();
+        await this.tweenPromise({ targets: this.player, alpha: 0, duration: 400 });
+        this.player.x = targetX;
+        this.player.y = CENTER_Y;
+        this.player.setDepth(2);
+        this.player.play('anim_idle');
+        await this.tweenPromise({ targets: this.player, alpha: 1, duration: 400 });
+    }
+
+    /**
+     * Re-show a question and run its full 13 s decision window
+     * (idle 10 s + idle_to_walk_right + 3 walk_right). Used after respawn.
+     */
+    async _retryDecisionWindow(qIndex, lockX) {
+        this._showQuestionWithSkip(qIndex, lockX, 13000);
+        var skipped = false;
+        if (await this._stepRaceSkip('idle', 5, 0, 0)) skipped = true;
+        if (!skipped && await this._stepRaceSkip('idle_to_walk_right', 1, 0, 0)) skipped = true;
+        if (!skipped && await this._walkRightSkipable(3)) skipped = true;
+        if (skipped) this._handleSkipTeleport();
+    }
+
+    /** Transition to GameOverScene with fade. */
+    async _goGameOver() {
+        this.levelRunning = false;
+        this.questionUI.hide();
+        this.cameras.main.fadeOut(500);
+        await this.delay(500);
+        this.scene.start('GameOverScene', { level: this.levelNum });
+    }
+
+    /**
+     * Compute the 3-sub-step diagonal movement for a corridor.
+     * Horizontal is split equally across transIn + walk + transOut (DIAG_DX/3 each).
+     * Vertical is (corridorY - centerY) / 3 per sub-step — variable, based on target corridor.
+     */
+    _diagMovement(corridorIndex) {
+        var CFG = FloQuest.Config;
+        var c = FloQuest.CorridorSystem.getCorridor(corridorIndex);
+        var totalDy = c.y - FloQuest.CorridorSystem.getCenterY();
+        return {
+            dx: CFG.DIAG_DX / 3,
+            dy: totalDy / 3,
+            walk: c.walkType,
+            transIn: c.transIn,
+            transOut: c.transOut,
+            returnIn: c.returnIn,
+            returnWalk: c.returnWalk,
+            returnOut: c.returnOut
+        };
     }
 
     // ===============================================================
@@ -299,7 +418,7 @@ FloQuest.GameScene = class GameScene extends Phaser.Scene {
     async runLevel() {
         var CFG = FloQuest.Config;
         this.levelRunning = true;
-        this.lives = CFG.LIVES_PER_LEVEL;
+        this.lives = FloQuest.ScoreManager.getLivesForDifficulty();
 
         this._log('=== LEVEL START === level=' + this.levelNum);
 
@@ -341,36 +460,170 @@ FloQuest.GameScene = class GameScene extends Phaser.Scene {
 
         // Wait for player to click "INIZIA" (instant if already clicked)
         await introReady;
+
         this._log('Phase A — Intro END');
 
-        // === Phase B — Question loop ===
-        var q = 0;
-        while (q < CFG.TOTAL_QUESTIONS) {
+        // === Phase B — Question loop with corridor movement ===
+        // Cycle per question (13 steps, 900px — 13 seconds):
+        //   3 × walk_right             (decision window, Q_n visible) → LOCK          3s / 300px
+        //   3 × diag to corridor       (transIn + walk + transOut)                    3s / DIAG
+        //   4 × walk_right in corridor                                                4s / 400px
+        //   3 × diag back to center    (returnIn + returnWalk + returnOut)            3s / DIAG
+        // Q1 special: show + idle(5 cycles = 10s reading time) + idle_to_walk_right + 3 walk_right
+        //   → Q1 visible ~13s, matching Q2+.
+        // Skip mode (if option enabled): answer click teleports to the visible question's natural lock X.
+        var WPX = CFG.WALK_RIGHT_PX;
+        var DIAG = CFG.DIAG_DX;
+        var CORRIDOR_STEPS = 4;  // walk_right cycles inside the corridor
+        var cycleStride = 3 * WPX + DIAG + CORRIDOR_STEPS * WPX + DIAG;  // 900px
+
+        console.log('[LOOP] START x=' + Math.round(this.player.x) +
+            ' | cycle stride=' + cycleStride + 'px' +
+            ' (3×' + WPX + ' + ' + DIAG + ' + ' + CORRIDOR_STEPS + '×' + WPX + ' + ' + DIAG + ')');
+
+        // Timer duration: 13s for full display (idle+decision for Q1, corridor+decision for Q_{n+1}).
+        var TIMER_FULL = 13000;
+
+        // --- Q1: show now (still idle from picking_to_idle), 10s idle, transition, 3 walk_right ---
+        var q1LockX = this.player.x + 3 * WPX;
+        this._showQuestionWithSkip(0, q1LockX, TIMER_FULL);
+
+        var q1Skipped = false;
+        if (await this._stepRaceSkip('idle', 5, 0, 0)) q1Skipped = true;
+        if (!q1Skipped && await this._stepRaceSkip('idle_to_walk_right', 1, 0, 0)) q1Skipped = true;
+        if (!q1Skipped && await this._walkRightSkipable(3)) q1Skipped = true;
+
+        if (q1Skipped) this._handleSkipTeleport();
+
+        // --- Main loop: lock in Q_n, then branch on correct / wrong / timeout ---
+        for (var q = 0; q < CFG.TOTAL_QUESTIONS; q++) {
             if (!this.levelRunning) return;
 
-            this._log('Phase B — Question ' + (q + 1) + '/' + CFG.TOTAL_QUESTIONS + ' BEGIN');
-            var result = await this.runQuestion(q);
-            this._log('Phase B — Question ' + (q + 1) + ' result=' + result);
+            var answer = this.questionUI.lockIn();
+            var curLockX = this.player.x;
+            var hasNext = q + 1 < CFG.TOTAL_QUESTIONS;
 
-            if (result === 'correct') {
-                q++;
-            } else if (result === 'gameover') {
-                this._log('=== GAME OVER ===');
-                this.questionUI.hide();
-                this.cameras.main.fadeOut(400);
+            this._log('Q' + (q + 1) + ' LOCK',
+                'corridor=' + answer.corridor + ' correct=' + answer.correct +
+                (answer.timedOut ? ' TIMEOUT' : ''));
+
+            // ----- TIMEOUT — fall_in_hole in place, respawn, retry -----
+            if (answer.timedOut) {
+                this._skipPromise = null;
+                FloQuest.AudioManager.play('trap');
+                await this.step('fall_in_hole', 1, 0, 0);
                 await this.delay(400);
-                this.scene.start('GameOverScene', { level: this.levelNum });
-                return;
+                this.lives--;
+                FloQuest.ScoreManager.recordError();
+                this._log('TIMEOUT done, lives=' + this.lives);
+                if (this.lives <= 0) { await this._goGameOver(); return; }
+                await this._respawn(curLockX - 3 * WPX);
+                await this._retryDecisionWindow(q, curLockX);
+                q--;
+                continue;
             }
-            // result === 'retry' → same question
-        }
 
-        // === Phase C — Bonus (placeholder for future implementation) ===
-        // await this.runBonus();
+            var ci = answer.corridor;
+            var m = this._diagMovement(ci);
+
+            // ----- WRONG — diag to corridor + 2 walk_right + death/falling + respawn + retry -----
+            if (!answer.correct) {
+                this._skipPromise = null;
+
+                // Death point is 5 s from now (transIn 1 s + walk 1 s + transOut 1 s + 2× walk_right 2 s).
+                // Trap sprites anticipate by trapOffset[ci] frames.
+                var trapPromise = this._scheduleTrapAnimations(ci, 5000, q);
+
+                // Player moves to the corridor's layer while it traverses the lane.
+                this.player.setDepth(ci + 1 + 0.5);
+
+                await this.step(m.transIn,  1, m.dx, m.dy);
+                await this.step(m.walk,     1, m.dx, m.dy);
+                await this.step(m.transOut, 1, m.dx, m.dy);
+                await this.step('walk_right', 1, WPX, 0);
+                await this.step('walk_right', 1, WPX, 0);
+
+                FloQuest.AudioManager.play('trap');
+                if (this.trapAnimType === 'falling') {
+                    await this.step('walk_to_falling', 1, 0, 0);
+                    this.player.play('anim_falling');
+                    await this.tweenPromise({
+                        targets: this.player,
+                        y: this.player.y + 400,
+                        duration: 2000,
+                        ease: 'Quad.easeIn'
+                    });
+                    await this.delay(300);
+                } else {
+                    await this.step('walk_to_death', 1, 0, 0);
+                    await this.step('death', 1, 0, 0);
+                    await this.delay(500);
+                }
+
+                await trapPromise;
+                this._resetTrapSprites();
+
+                this.lives--;
+                FloQuest.ScoreManager.recordError();
+                this._log('WRONG done, lives=' + this.lives);
+                if (this.lives <= 0) { await this._goGameOver(); return; }
+
+                await this._respawn(curLockX - 3 * WPX);
+                await this._retryDecisionWindow(q, curLockX);
+                q--;
+                continue;
+            }
+
+            // ----- CORRECT — full corridor cycle + 3 walk_right decision for Q_{n+1} -----
+            if (hasNext) {
+                var nextLockX = curLockX + cycleStride;
+                this._showQuestionWithSkip(q + 1, nextLockX, TIMER_FULL);
+            } else {
+                this._skipPromise = null;
+            }
+
+            // Player moves to the corridor's layer while it traverses the lane.
+            this.player.setDepth(ci + 1 + 0.5);
+
+            var ops = [
+                { anim: m.transIn,    dx: m.dx, dy: m.dy },
+                { anim: m.walk,       dx: m.dx, dy: m.dy },
+                { anim: m.transOut,   dx: m.dx, dy: m.dy }
+            ];
+            for (var cs = 0; cs < CORRIDOR_STEPS; cs++) {
+                ops.push({ anim: 'walk_right', dx: WPX, dy: 0 });
+            }
+            ops.push({ anim: m.returnIn,   dx: m.dx, dy: -m.dy });
+            ops.push({ anim: m.returnWalk, dx: m.dx, dy: -m.dy });
+            ops.push({ anim: m.returnOut,  dx: m.dx, dy: -m.dy });
+
+            var skipped = false;
+            for (var i = 0; i < ops.length; i++) {
+                if (await this._stepRaceSkip(ops[i].anim, 1, ops[i].dx, ops[i].dy)) {
+                    skipped = true;
+                    break;
+                }
+            }
+
+            // Back at centre — restore default depth (skip teleport also restores).
+            this.player.setDepth(2);
+
+            if (skipped) {
+                this._handleSkipTeleport();
+            } else if (hasNext) {
+                if (await this._walkRightSkipable(3)) {
+                    this._handleSkipTeleport();
+                }
+            }
+        }
 
         // === Level complete ===
         this._log('=== LEVEL COMPLETE ===');
         this.questionUI.hide();
+
+        // 5 walk_right to reveal the "goal reached" graphic at the end of the level.
+        await this.step('walk_right', 5, 5 * WPX, 0);
+
         if (this.isWalking) {
             await this.step('walk_right_to_idle', 1, 0, 0);
         }
@@ -379,234 +632,22 @@ FloQuest.GameScene = class GameScene extends Phaser.Scene {
         FloQuest.ScoreManager.completeLevel();
         FloQuest.ScoreManager.saveProgress();
 
+        // Narrative ending screen — wait for user to click "Continua"
+        var endingText = this.levelData.ending || '';
+        if (endingText) {
+            var self = this;
+            await new Promise(function(resolve) {
+                self.questionUI.showNarrative(endingText, 'Continua', resolve, {
+                    header: 'Livello ' + self.levelNum + ' — ' + self.levelData.name,
+                    lives: self.lives
+                });
+            });
+            this.questionUI.hide();
+        }
+
         this.cameras.main.fadeOut(500);
         await this.delay(500);
         this.scene.start('LevelCompleteScene', { level: this.levelNum });
-    }
-
-    // ===============================================================
-    // Single question (B.1 → B.5)
-    // ===============================================================
-
-    async runQuestion(qIndex) {
-        var CFG = FloQuest.Config;
-        var WPX = CFG.WALK_RIGHT_PX;
-        var CENTER_Y = FloQuest.CorridorSystem.getCenterY();
-
-        // ----- B.1 — Question visible + Walk (= decision time) -----
-        this._log('B.1 — Show question + Walk BEGIN');
-
-        // Save position where the question appears (for timeout respawn)
-        this.questionAppearX = this.player.x;
-
-        // Show question (first time or after respawn)
-        // For Q2+ after correct answer, it was already shown during B.5
-        if (!this.questionUI.isVisible()) {
-            this.questionUI.showQuestion(this.questions, qIndex, this.lives, CFG.TOTAL_QUESTIONS);
-        }
-
-        // Shorter walk if player already pre-selected during B.5
-        var preSelected = this.questionUI.selectedCorridor !== -1;
-        var walkCycles = preSelected ? CFG.WALK_CYCLES_PRE_SELECTED : CFG.WALK_CYCLES_QUESTION;
-
-        // Transition from idle → walk if needed
-        if (!this.isWalking) {
-            await this.step('idle_to_walk_right', 1, 0, 0);
-        }
-
-        // Start timer
-        this.questionUI.startTimer(walkCycles * 1000);
-        this.questionStartTime = Date.now();
-
-        this._log('B.1 — Walking ' + walkCycles + ' cycles (preSelected=' + preSelected + ')');
-
-        // Walk cycle-by-cycle — player can select/change answer the whole time
-        for (var i = 0; i < walkCycles; i++) {
-            await this.walkOneCycle();
-        }
-
-        // === Point of no return — lock in answer ===
-        this.questionUI._timerRunning = false;
-        var answer = this.questionUI.lockIn();
-        this.questionUI.hide();
-
-        this._log('B.1 — LOCK IN', 'corridor=' + answer.corridor +
-            ' correct=' + answer.correct + ' timedOut=' + !!answer.timedOut);
-
-        if (!this.levelRunning) return 'gameover';
-
-        // ----- TIMEOUT — fall in hole on the spot, respawn at question position -----
-        if (answer.timedOut) {
-            this._log('TIMEOUT — fall_in_hole in place');
-            FloQuest.AudioManager.play('trap');
-            this.firstTryMap[qIndex] = true;
-
-            await this.step('fall_in_hole', 1, 0, 0);
-            await this.delay(500);
-
-            this.lives--;
-            this._log('TIMEOUT — death done, lives=' + this.lives);
-
-            if (this.lives <= 0) return 'gameover';
-
-            // Respawn at position where the question appeared
-            this._log('TIMEOUT — respawn at questionAppearX=' + Math.round(this.questionAppearX));
-            await this.tweenPromise({ targets: this.player, alpha: 0, duration: 400 });
-            this.player.x = this.questionAppearX;
-            this.player.y = CENTER_Y;
-            this.player.play('anim_idle');
-            await this.tweenPromise({ targets: this.player, alpha: 1, duration: 400 });
-
-            // Re-show same question
-            this.questionUI.showQuestion(
-                this.questions, qIndex, this.lives, CFG.TOTAL_QUESTIONS);
-
-            return 'retry';
-        }
-
-        // ----- B.2 — Move to corridor -----
-        this._log('B.2 — Move to corridor ' + (answer.corridor + 1) + ' BEGIN');
-        this.preCorridorX = this.player.x;
-
-        var ci = answer.corridor;
-        var c = FloQuest.CorridorSystem.getCorridor(ci);
-        var mov = FloQuest.CorridorSystem.calcMovement(ci);
-
-        // If wrong answer, schedule trap animations NOW (before B.2 movement).
-        // The trap will fire after (timeToDeathPoint - anticipation) ms,
-        // so it visually arrives just as the player reaches the death spot.
-        this._trapAnimPromise = Promise.resolve();
-        if (!answer.correct) {
-            var b2Frames = 30 + 30 + 30 * c.approachCycles + 30; // walk_right + transIn + walk + transOut
-            var b3Frames = 60; // walk_right x2
-            var framesToDeath = b2Frames + b3Frames;
-            var msToDeathAnim = (framesToDeath / FloQuest.Config.ANIM_FPS) * 1000;
-            this._scheduleTrapAnimations(ci, msToDeathAnim);
-        }
-
-        // Set player depth to match corridor layer (top of that layer)
-        this.player.setDepth(ci + 1 + 0.5);
-
-        await this.step('walk_right', 1, WPX, 0, true);
-        await this.step(c.transIn, 1, mov.transIn.dx, mov.transIn.dy);
-        if (c.approachCycles > 0) {
-            await this.step(c.walkType, c.approachCycles, mov.walk.dx, mov.walk.dy);
-        }
-        await this.step(c.transOut, 1, mov.transOut.dx, mov.transOut.dy);
-        this._log('B.2 — Arrived at corridor ' + (ci + 1));
-
-        // ----- B.3 — Suspense walk in corridor -----
-        this._log('B.3 — Suspense walk BEGIN');
-        await this.step('walk_right', 2, WPX * 2, 0);
-        this._log('B.3 — Suspense walk END');
-
-        // ----- B.4 — Outcome -----
-        if (answer.correct) {
-            this._log('B.4 — CORRECT');
-            return await this._handleCorrect(qIndex, ci, c, mov);
-        } else {
-            this._log('B.4 — WRONG (trap=' + this.trapAnimType + ')');
-            return await this._handleWrong(qIndex, ci, c, mov);
-        }
-    }
-
-    // ---------------------------------------------------------------
-    // Correct answer
-    // ---------------------------------------------------------------
-
-    async _handleCorrect(qIndex, ci, corridor, mov) {
-        var CFG = FloQuest.Config;
-        var WPX = CFG.WALK_RIGHT_PX;
-
-        FloQuest.AudioManager.play('correct');
-
-        // Score
-        var timeMs = Date.now() - this.questionStartTime;
-        var firstTry = !this.firstTryMap[qIndex];
-        var points = FloQuest.ScoreManager.calculateQuestionScore(timeMs, firstTry);
-        FloQuest.ScoreManager.addScore(points);
-
-        // Safe passage walk
-        this._log('B.4 — Safe passage walk');
-        await this.step('walk_right', 2, WPX * 2, 0);
-
-        // ----- B.5 — Return to center (show next question early) -----
-        this._log('B.5 — Return to center BEGIN');
-        if (qIndex < CFG.TOTAL_QUESTIONS - 1) {
-            this.questionUI.showQuestion(
-                this.questions, qIndex + 1, this.lives, CFG.TOTAL_QUESTIONS);
-        }
-
-        await this.step(corridor.returnIn, 1, mov.transIn.dx, -mov.transIn.dy);
-        if (corridor.approachCycles > 0) {
-            await this.step(corridor.returnWalk, corridor.approachCycles,
-                mov.walk.dx, -mov.walk.dy);
-        }
-        await this.step(corridor.returnOut, 1, mov.transOut.dx, -mov.transOut.dy);
-
-        // Restore default player depth
-        this.player.setDepth(2);
-
-        this._log('B.5 — Return to center END');
-        return 'correct';
-    }
-
-    // ---------------------------------------------------------------
-    // Wrong answer — trap + respawn
-    // ---------------------------------------------------------------
-
-    async _handleWrong(qIndex, corridor) {
-        var CFG = FloQuest.Config;
-        var CENTER_Y = FloQuest.CorridorSystem.getCenterY();
-
-        this.firstTryMap[qIndex] = true;
-
-        // Play player death/falling animation
-        // (trap animations were already scheduled before B.2 started)
-        FloQuest.AudioManager.play('trap');
-        if (this.trapAnimType === 'falling') {
-            await this.step('walk_to_falling', 1, 0, 0);
-            this.player.play('anim_falling');
-            await this.tweenPromise({
-                targets: this.player,
-                y: this.player.y + 400,
-                duration: 2000,
-                ease: 'Quad.easeIn'
-            });
-            await this.delay(500);
-        } else {
-            await this.step('walk_to_death', 1, 0, 0);
-            await this.step('death', 1, 0, 0);
-            await this.delay(1200);
-        }
-
-        // Wait for trap animations to finish too
-        await this._trapAnimPromise;
-
-        this.lives--;
-        this._log('B.4 — Trap done, lives=' + this.lives);
-
-        if (this.lives <= 0) {
-            return 'gameover';
-        }
-
-        // Reset trap sprites to initial state
-        this._resetTrapSprites();
-
-        // Respawn at position where the question appeared (before B.1 walk)
-        this._log('B.4 — Respawn at x=' + Math.round(this.questionAppearX));
-        await this.tweenPromise({ targets: this.player, alpha: 0, duration: 400 });
-        this.player.x = this.questionAppearX;
-        this.player.y = CENTER_Y;
-        this.player.setDepth(2);
-        this.player.play('anim_idle');
-        await this.tweenPromise({ targets: this.player, alpha: 1, duration: 400 });
-
-        // Re-show same question (reshuffled)
-        this.questionUI.showQuestion(
-            this.questions, qIndex, this.lives, CFG.TOTAL_QUESTIONS);
-
-        return 'retry';
     }
 
     // ===============================================================
@@ -614,88 +655,71 @@ FloQuest.GameScene = class GameScene extends Phaser.Scene {
     // ===============================================================
 
     /**
-     * Schedule trap animations so they fire at the right moment relative to the
-     * player death animation.  Called at lock-in (before B.2 movement starts).
-     *
-     * msToDeathAnim = time from NOW until the player reaches the death point.
-     * trapOffset[corridor] = how many frames BEFORE the death the trap should start.
-     *
-     * So each trap fires after:  msToDeathAnim - (offsetFrames / FPS * 1000)  ms.
-     * If the result is <= 0, the trap fires immediately.
-     *
-     * Stores the combined promise in this._trapAnimPromise.
+     * Schedule trap sprite animations relative to the upcoming death point.
+     * Each trap sprite fires `trapOffset[corridor]` frames BEFORE impact so its
+     * visual coincides with the player's death animation.
+     * trapCorridor = 4 means "fires in any corridor".
+     * trapQuestion (1..10) pins a trap to a specific question; 0/missing = any.
+     * Returns a Promise that resolves when every scheduled trap has finished.
      */
-    _scheduleTrapAnimations(corridor, msToDeathAnim) {
+    _scheduleTrapAnimations(corridor, msToDeathAnim, questionIndex) {
         var scene = this;
         var FPS = FloQuest.Config.ANIM_FPS;
         var promises = [];
+        var qNum = questionIndex + 1;
 
         this._trapSprites.forEach(function(trap) {
             var el = trap.el;
-            // Filter: trapCorridor 4 = all corridors, otherwise must match
             if (el.trapCorridor !== 4 && el.trapCorridor !== corridor) return;
+            if (el.trapQuestion && el.trapQuestion !== qNum) return;
 
-            // Calculate when to fire: death time minus the anticipation offset
             var offsets = el.trapOffset || [0, 0, 0, 0];
             var offsetFrames = offsets[corridor] || 0;
             var anticipationMs = (offsetFrames / FPS) * 1000;
             var delayMs = Math.max(0, msToDeathAnim - anticipationMs);
 
-            var p = new Promise(function(resolve) {
+            promises.push(new Promise(function(resolve) {
                 scene.time.delayedCall(delayMs, function() {
-                    // Make visible if hidden
                     if (el.trapHidden !== false) trap.sprite.setVisible(true);
 
                     if (el.trapAnimType === 'tween' && el.trapTween) {
-                        // Tween animation
                         var tweenConfig = {
                             targets: trap.sprite,
                             duration: el.trapTweenDuration || 500,
                             ease: el.trapTweenEase || 'Linear',
                             onComplete: resolve
                         };
-                        el.trapTween.forEach(function(tw) {
-                            tweenConfig[tw.prop] = tw.to;
-                        });
+                        el.trapTween.forEach(function(tw) { tweenConfig[tw.prop] = tw.to; });
                         scene.tweens.add(tweenConfig);
                     } else if (trap.animKey) {
-                        // Frame-by-frame animation (one-shot)
                         trap.sprite.play(trap.animKey);
                         trap.sprite.once('animationcomplete', resolve);
                     } else {
                         resolve();
                     }
                 });
-            });
-            promises.push(p);
+            }));
         });
 
-        this._trapAnimPromise = promises.length > 0 ? Promise.all(promises) : Promise.resolve();
+        return promises.length > 0 ? Promise.all(promises) : Promise.resolve();
     }
 
-    /**
-     * Reset all trap sprites to their initial state after a trap sequence.
-     */
+    /** Reset every trap sprite to its initial state (for retry). */
     _resetTrapSprites() {
         this._trapSprites.forEach(function(trap) {
             var el = trap.el;
             var s = trap.sprite;
-
-            // Hide if configured
             if (el.trapHidden !== false) s.setVisible(false);
-
-            // Reset position
             s.x = trap.origX;
             s.y = trap.origY;
-
-            // Reset tween properties to initial values
             if (el.trapAnimType === 'tween' && el.trapTween) {
+                // Editor position wins for x/y; tw.from resets other tweened props (alpha, scale, rotation, …).
                 el.trapTween.forEach(function(tw) {
-                    if (tw.from != null) s[tw.prop] = tw.from;
+                    if (tw.from != null && tw.prop !== 'x' && tw.prop !== 'y') {
+                        s[tw.prop] = tw.from;
+                    }
                 });
             }
-
-            // Reset frame-by-frame animation to first frame
             if (trap.animKey) {
                 s.anims.stop();
                 s.setFrame(0);
@@ -723,11 +747,6 @@ FloQuest.GameScene = class GameScene extends Phaser.Scene {
         nameEl.className = 'intro-level-name';
         nameEl.textContent = this.levelData.name;
         panel.appendChild(nameEl);
-
-        var themeEl = document.createElement('div');
-        themeEl.className = 'intro-level-theme';
-        themeEl.textContent = this.levelData.theme;
-        panel.appendChild(themeEl);
 
         var narEl = document.createElement('div');
         narEl.className = 'intro-narration';

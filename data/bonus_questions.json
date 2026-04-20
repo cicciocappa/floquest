@@ -1,0 +1,46 @@
+{
+    "1": {
+        "1": [
+            { "q": "L'acqua bolle a 100°C a livello del mare.", "answers": ["Vero", "Falso"] },
+            { "q": "Il Sole gira intorno alla Terra.", "answers": ["Falso", "Vero"] },
+            { "q": "Roma è la capitale d'Italia.", "answers": ["Vero", "Falso"] },
+            { "q": "Il pomodoro è un ortaggio (dal punto di vista botanico).", "answers": ["Falso", "Vero"] },
+            { "q": "La Gioconda è stata dipinta da Leonardo da Vinci.", "answers": ["Vero", "Falso"] },
+            { "q": "Il Monte Bianco è la vetta più alta d'Africa.", "answers": ["Falso", "Vero"] },
+            { "q": "Dante è l'autore della Divina Commedia.", "answers": ["Vero", "Falso"] },
+            { "q": "Il numero π (pi greco) vale esattamente 3,14.", "answers": ["Falso", "Vero"] },
+            { "q": "L'Everest è la montagna più alta del mondo.", "answers": ["Vero", "Falso"] },
+            { "q": "I pipistrelli sono uccelli.", "answers": ["Falso", "Vero"] },
+            { "q": "Il cuore umano ha quattro camere.", "answers": ["Vero", "Falso"] },
+            { "q": "Venezia è costruita sull'acqua dolce.", "answers": ["Falso", "Vero"] }
+        ],
+        "2": [
+            { "q": "Il Colosseo si trova a Roma.", "answers": ["Vero", "Falso"] },
+            { "q": "La luce impiega un'ora ad arrivare dal Sole alla Terra.", "answers": ["Falso", "Vero"] },
+            { "q": "L'oro è un metallo.", "answers": ["Vero", "Falso"] },
+            { "q": "I delfini sono pesci.", "answers": ["Falso", "Vero"] },
+            { "q": "Mozart era austriaco.", "answers": ["Vero", "Falso"] },
+            { "q": "L'Oceano Atlantico è più grande del Pacifico.", "answers": ["Falso", "Vero"] },
+            { "q": "La Torre Eiffel si trova a Parigi.", "answers": ["Vero", "Falso"] },
+            { "q": "Il Mar Morto è il lago più profondo del mondo.", "answers": ["Falso", "Vero"] },
+            { "q": "Shakespeare scrisse l'Amleto.", "answers": ["Vero", "Falso"] },
+            { "q": "Gli squali sono mammiferi.", "answers": ["Falso", "Vero"] },
+            { "q": "L'Italia confina con la Francia.", "answers": ["Vero", "Falso"] },
+            { "q": "Plutone è ancora classificato come pianeta.", "answers": ["Falso", "Vero"] }
+        ],
+        "3": [
+            { "q": "Il Tevere attraversa Roma.", "answers": ["Vero", "Falso"] },
+            { "q": "Einstein vinse il Nobel per la relatività.", "answers": ["Falso", "Vero"] },
+            { "q": "Il DNA ha struttura a doppia elica.", "answers": ["Vero", "Falso"] },
+            { "q": "Il ragno è un insetto.", "answers": ["Falso", "Vero"] },
+            { "q": "Napoleone era francese.", "answers": ["Falso", "Vero"] },
+            { "q": "Il Nilo è il fiume più lungo del mondo.", "answers": ["Vero", "Falso"] },
+            { "q": "La Grande Muraglia è visibile dalla Luna a occhio nudo.", "answers": ["Falso", "Vero"] },
+            { "q": "Marie Curie vinse due Premi Nobel.", "answers": ["Vero", "Falso"] },
+            { "q": "Il sangue umano è blu finché non entra in contatto con l'aria.", "answers": ["Falso", "Vero"] },
+            { "q": "Il Giappone è formato da più isole.", "answers": ["Vero", "Falso"] },
+            { "q": "I canguri vivono in Africa.", "answers": ["Falso", "Vero"] },
+            { "q": "La Cappella Sistina fu affrescata da Michelangelo.", "answers": ["Vero", "Falso"] }
+        ]
+    }
+}

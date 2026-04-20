@@ -8,6 +8,8 @@ FloQuest.ScoreManager = {
     currentQuestion: 0,
     questionsAnswered: [],
     perfectLevel: true,
+    errorsThisLevel: 0,
+    lastLevelScore: 0,
     timerActive: true,
 
     reset: function() {
@@ -15,44 +17,74 @@ FloQuest.ScoreManager = {
         this.currentLevel = 1;
         this.currentQuestion = 0;
         this.questionsAnswered = [];
-        this.lives = FloQuest.Config.LIVES_PER_LEVEL;
+        this.lives = this.getLivesForDifficulty();
         this.perfectLevel = true;
+        this.errorsThisLevel = 0;
+        this.lastLevelScore = 0;
+    },
+
+    /** Lives granted per level based on current difficulty. */
+    getLivesForDifficulty: function() {
+        var table = FloQuest.Config.LIVES_PER_DIFFICULTY || {};
+        var diff = this.getDifficulty();
+        return table[diff] != null ? table[diff] : FloQuest.Config.LIVES_PER_LEVEL;
     },
 
     setJourney: function(journeyId) {
         this.currentJourney = journeyId;
         var journey = FloQuest.Journeys[journeyId - 1];
         FloQuest.Levels = journey.levels;
-        FloQuest.Questions = FloQuest.AllQuestions[String(journeyId)] || {};
+        // FloQuest.Questions and FloQuest.BonusQuestions are populated by
+        // QuestionsAPI.fetchJourney() before this scene transition.
     },
 
     resetForLevel: function() {
-        this.lives = FloQuest.Config.LIVES_PER_LEVEL;
+        this.lives = this.getLivesForDifficulty();
         this.currentQuestion = 0;
         this.questionsAnswered = [];
         this.perfectLevel = true;
+        this.errorsThisLevel = 0;
     },
 
     addScore: function(points) {
         this.score += points;
     },
 
-    calculateQuestionScore: function(timeMs, firstTry) {
-        var points = FloQuest.Config.SCORE.BASE;
-        if (timeMs < FloQuest.Config.SPEED_THRESHOLD) {
-            points += FloQuest.Config.SCORE.SPEED_BONUS;
-        }
-        if (firstTry) {
-            points += FloQuest.Config.SCORE.FIRST_TRY_BONUS;
-        }
-        return points;
+    /** Called for every wrong answer or timeout in regular levels. */
+    recordError: function() {
+        this.errorsThisLevel++;
+        this.perfectLevel = false;
     },
 
+    /** Difficulty multiplier based on the user's current difficulty setting. */
+    getDifficultyFactor: function() {
+        var factors = FloQuest.Config.DIFFICULTY_FACTOR;
+        var diff = this.getDifficulty();
+        return factors[diff] != null ? factors[diff] : 1.0;
+    },
+
+    /**
+     * New formula: max(0, LEVEL_BASE - errors*ERROR_PENALTY) * difficulty factor.
+     * Returns the points awarded for this level (for display in LevelCompleteScene).
+     */
     completeLevel: function() {
-        this.addScore(FloQuest.Config.SCORE.LEVEL_COMPLETE);
-        if (this.perfectLevel) {
-            this.addScore(FloQuest.Config.SCORE.PERFECT_LEVEL);
-        }
+        var cfg = FloQuest.Config.SCORE;
+        var base = Math.max(0, cfg.LEVEL_BASE - this.errorsThisLevel * cfg.ERROR_PENALTY);
+        var gained = Math.round(base * this.getDifficultyFactor());
+        this.addScore(gained);
+        this.lastLevelScore = gained;
+        return gained;
+    },
+
+    /**
+     * Bonus scoring: completed=true → BONUS_COMPLETE flat;
+     * else streak × BONUS_PER_STREAK. Returns points added.
+     */
+    completeBonus: function(streak, completed) {
+        var cfg = FloQuest.Config.SCORE;
+        var gained = completed ? cfg.BONUS_COMPLETE : (streak * cfg.BONUS_PER_STREAK);
+        this.addScore(gained);
+        return gained;
     },
 
     loseLife: function() {
@@ -180,6 +212,26 @@ FloQuest.ScoreManager = {
             var data = JSON.parse(localStorage.getItem('floquest_top_scores'));
             return Array.isArray(data) ? data : [];
         } catch(e) { return []; }
+    },
+
+    // --- Animations mode: 'full' | 'reduced' | 'none' ---
+    getAnimationsMode: function() {
+        try {
+            var v = localStorage.getItem('floquest_animations_mode');
+            if (v === 'full' || v === 'reduced' || v === 'none') return v;
+            // Back-compat: migrate legacy skip_animations boolean
+            var legacy = localStorage.getItem('floquest_skip_animations');
+            if (legacy === 'true') return 'reduced';
+            return 'full';
+        } catch(e) { return 'full'; }
+    },
+
+    setAnimationsMode: function(mode) {
+        try { localStorage.setItem('floquest_animations_mode', mode); } catch(e) {}
+    },
+
+    getSkipAnimations: function() {
+        return this.getAnimationsMode() === 'reduced';
     },
 
     addTopScore: function(score, level) {

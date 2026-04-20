@@ -218,9 +218,10 @@
 // CONSTANTS
 // =====================================================================
 const TILE_INTRO = 500;
-const TILE_QUESTION = 2138;
+const TILE_QUESTION = 900;
+const TILE_OUTRO = 500;  // 5 walk_right after Q10 to reveal the goal graphic
 const NUM_QUESTIONS = 10;
-const CANVAS_W = TILE_INTRO + TILE_QUESTION * NUM_QUESTIONS; // 21880
+const CANVAS_W = TILE_INTRO + TILE_QUESTION * NUM_QUESTIONS + TILE_OUTRO; // 10000
 const CANVAS_H = 960;
 
 // Corridor calculation (mirrors prototype)
@@ -343,68 +344,38 @@ function getCorridors(skyH) {
   return { corridors, centerY, floorH, laneH, floorTop: skyH };
 }
 
-// Trajectory points for one question tile (relative to tile start)
-function calcTrajectory(skyH, corridorIndex) {
+// Per-question trajectory (mirrors GameScene): 3 walk_right decision (Q visible)
+// → DIAG_DX diagonal into corridor → 4 walk_right in corridor → DIAG_DX diagonal
+// back to centre. Fixed 900 px stride for every corridor.
+const DIAG_DX = 100;
+const CORRIDOR_WALK_STEPS = 4;
+const DECISION_WALK_STEPS = 3;
+
+function getQuestionTrajectory(skyH, corridorIndex) {
   const { corridors, centerY } = getCorridors(skyH);
   const c = corridors[corridorIndex];
 
-  // Angles and approach cycles per corridor type
-  const isOuter = (corridorIndex === 0 || corridorIndex === 3);
-  const angle = isOuter ? 60 : 45;
-  const approachCycles = isOuter ? 2 : 1;
-
-  const targetDy = c.y - centerY;
-  const totalDiagFrames = 30 + 30 * approachCycles + 30;
-  const dyPerFrame = targetDy / totalDiagFrames;
-  const angleRad = (angle * Math.PI) / 180;
-  const dxPerFrame = Math.abs(dyPerFrame) / Math.tan(angleRad);
-  const totalDiagDx = dxPerFrame * totalDiagFrames;
-
-  return { totalDiagDx, approachCycles, targetY: c.y, centerY, angle };
-}
-
-function getMaxDiagRoundtrip(skyH) {
-  let max = 0;
-  for (let i = 0; i < 4; i++) {
-    const t = calcTrajectory(skyH, i);
-    max = Math.max(max, t.totalDiagDx * 2);
-  }
-  return max;
-}
-
-// Full trajectory path for one question (returns array of {x, y} waypoints)
-function getQuestionTrajectory(skyH, corridorIndex) {
-  const { corridors, centerY } = getCorridors(skyH);
-  const traj = calcTrajectory(skyH, corridorIndex);
-  const maxRt = getMaxDiagRoundtrip(skyH);
-  const comp = maxRt - traj.totalDiagDx * 2;
-  const compHalf = comp / 2;
-
-  // Walk cycles for question decision phase
-  const WALK_CYCLES_QUESTION = 12;
-  const WALK_CYCLES_PRE = 3; // average
+  const cy = centerY;
+  const ty = c.y;
 
   const points = [];
   let x = 0;
-  const cy = centerY;
-  const ty = traj.targetY;
 
-  // B.1 — Walk right (decision time)
-  points.push({ x, y: cy, label: 'Q start' });
-  x += WALK_RIGHT_PX * WALK_CYCLES_QUESTION;
+  // Decision window — Q_n visible, player walks at centre Y
+  points.push({ x, y: cy, label: 'Q appear' });
+  x += WALK_RIGHT_PX * DECISION_WALK_STEPS;
+  points.push({ x, y: cy, label: 'lock-in' });
 
-  // B.2 — Extra walk + diagonal to corridor
-  x += WALK_RIGHT_PX; // 1 cycle before diagonal
-  points.push({ x, y: cy, label: 'diag start' });
-  x += traj.totalDiagDx;
+  // Diagonal into the chosen corridor
+  x += DIAG_DX;
   points.push({ x, y: ty, label: 'in corridor' });
 
-  // B.3+B.4 — Corridor traverse (suspense + safe passage + compensation)
-  x += WALK_RIGHT_PX * 4 + comp;
+  // Straight walk inside the corridor
+  x += WALK_RIGHT_PX * CORRIDOR_WALK_STEPS;
   points.push({ x, y: ty, label: 'return start' });
 
-  // B.5 — Return diagonal
-  x += traj.totalDiagDx;
+  // Diagonal back to centre
+  x += DIAG_DX;
   points.push({ x, y: cy, label: 'back center' });
 
   return points;
@@ -822,6 +793,7 @@ function renderGuides(c) {
   for (let i = 0; i < NUM_QUESTIONS; i++) {
     c.fillText('Q' + (i + 1), TILE_INTRO + TILE_QUESTION * i + 8, 20);
   }
+  c.fillText('GOAL', TILE_INTRO + TILE_QUESTION * NUM_QUESTIONS + 8, 20);
 }
 
 function renderMinimap() {
@@ -947,7 +919,7 @@ function pasteClipboard() {
     if (el.pick) newEl.pick = true;
     if (el.trap) {
       newEl.trap = true; newEl.trapAnimType = el.trapAnimType; newEl.trapHidden = el.trapHidden;
-      newEl.trapCorridor = el.trapCorridor; newEl.trapOffset = el.trapOffset ? [...el.trapOffset] : [0,0,0,0];
+      newEl.trapCorridor = el.trapCorridor; newEl.trapQuestion = el.trapQuestion; newEl.trapOffset = el.trapOffset ? [...el.trapOffset] : [0,0,0,0];
       newEl.trapTween = el.trapTween ? el.trapTween.map(t => ({...t})) : [];
       newEl.trapTweenDuration = el.trapTweenDuration; newEl.trapTweenEase = el.trapTweenEase;
     }
@@ -1205,6 +1177,88 @@ function cleanupEmptyGroups() {
   });
 }
 
+// Persisted across property-panel rebuilds (not part of level data / undo).
+let lastGradientStart = '#ffd066';
+let lastGradientEnd   = '#1a1040';
+
+function hexToRgb(hex) {
+  const h = (hex || '#ffffff').replace('#', '');
+  return { r: parseInt(h.substr(0, 2), 16), g: parseInt(h.substr(2, 2), 16), b: parseInt(h.substr(4, 2), 16) };
+}
+function rgbToHex(r, g, b) {
+  return '#' + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
+}
+function lerpHex(a, b, t) {
+  const ca = hexToRgb(a), cb = hexToRgb(b);
+  return rgbToHex(ca.r + (cb.r - ca.r) * t, ca.g + (cb.g - ca.g) * t, ca.b + (cb.b - ca.b) * t);
+}
+function gradientRefX(el) {
+  return el.type === 'light' ? el.x : el.x + (el.w || 0) / 2;
+}
+
+/** Duplicate every element in the given group into a brand-new group. Selects the copies. */
+function duplicateGroup(gid) {
+  const members = state.elements.filter(e => e.groupId === gid);
+  if (members.length === 0) return;
+  pushHistory();
+  const newGid = state.nextGroupId++;
+  const oldGroup = state.groups[gid];
+  state.groups[newGid] = { name: (oldGroup ? oldGroup.name : 'Group') + ' copy' };
+
+  state.selectedIds.clear();
+  state.primarySelectedId = null;
+  members.forEach(el => {
+    const newEl = {
+      id: state.nextId++,
+      type: el.type,
+      x: Math.round(el.x + 50), y: Math.round(el.y + 50),
+      w: el.w || 0, h: el.h || 0,
+      texId: el.texId || null,
+      layer: el.layer,
+      tile: !!el.tile,
+      groupId: newGid,
+    };
+    if (el.tint) newEl.tint = el.tint;
+    if (el.flipX) newEl.flipX = true;
+    if (el.flipY) newEl.flipY = true;
+    if (el.rotation) newEl.rotation = el.rotation;
+    if (el.type === 'light') {
+      newEl.lightMode = el.lightMode; newEl.lightRadius = el.lightRadius;
+      newEl.lightColor = el.lightColor; newEl.lightIntensity = el.lightIntensity;
+      newEl.lightDirX = el.lightDirX; newEl.lightDirY = el.lightDirY; newEl.lightDirZ = el.lightDirZ;
+    }
+    if (el.pick) newEl.pick = true;
+    if (el.trap) {
+      newEl.trap = true; newEl.trapAnimType = el.trapAnimType; newEl.trapHidden = el.trapHidden;
+      newEl.trapCorridor = el.trapCorridor; newEl.trapQuestion = el.trapQuestion; newEl.trapOffset = el.trapOffset ? [...el.trapOffset] : [0,0,0,0];
+      newEl.trapTween = el.trapTween ? el.trapTween.map(t => ({...t})) : [];
+      newEl.trapTweenDuration = el.trapTweenDuration; newEl.trapTweenEase = el.trapTweenEase;
+    }
+    state.elements.push(newEl);
+    state.selectedIds.add(newEl.id);
+    if (state.primarySelectedId == null) state.primarySelectedId = newEl.id;
+  });
+  updateProperties();
+  render();
+}
+
+/** Apply a left-to-right tint gradient across all members of a group (excluding lights). */
+function applyGroupGradient(gid, startHex, endHex) {
+  const tintable = state.elements.filter(e => e.groupId === gid && e.type !== 'light');
+  if (tintable.length === 0) return;
+  pushHistory();
+  const xs = tintable.map(gradientRefX);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const span = maxX - minX;
+  tintable.forEach(e => {
+    const t = span > 0 ? (gradientRefX(e) - minX) / span : 0;
+    e.tint = lerpHex(startHex, endHex, t);
+  });
+  updateProperties();
+  render();
+}
+
 function duplicateSelected() {
   if (state.selectedIds.size === 0) return;
   pushHistory();
@@ -1239,7 +1293,7 @@ function duplicateSelected() {
     if (el.pick) newEl.pick = true;
     if (el.trap) {
       newEl.trap = true; newEl.trapAnimType = el.trapAnimType; newEl.trapHidden = el.trapHidden;
-      newEl.trapCorridor = el.trapCorridor; newEl.trapOffset = el.trapOffset ? [...el.trapOffset] : [0,0,0,0];
+      newEl.trapCorridor = el.trapCorridor; newEl.trapQuestion = el.trapQuestion; newEl.trapOffset = el.trapOffset ? [...el.trapOffset] : [0,0,0,0];
       newEl.trapTween = el.trapTween ? el.trapTween.map(t => ({...t})) : [];
       newEl.trapTweenDuration = el.trapTweenDuration; newEl.trapTweenEase = el.trapTweenEase;
     }
@@ -1446,6 +1500,12 @@ function updateProperties() {
           <label style="color:#aac;font-size:11px;"><input type="checkbox" id="propGrpFlipX">X</label>
           <label style="color:#aac;font-size:11px;margin-left:8px;"><input type="checkbox" id="propGrpFlipY">Y</label>
         </div>
+        <div class="prop-row"><label>Gradient</label>
+          <input type="color" id="propGrpGradStart" value="${lastGradientStart}" style="width:34px;height:22px;padding:0;border:none;cursor:pointer;" title="Start color (leftmost)">
+          <input type="color" id="propGrpGradEnd" value="${lastGradientEnd}" style="width:34px;height:22px;padding:0;border:none;cursor:pointer;margin-left:2px;" title="End color (rightmost)">
+          <button id="propGrpGradSet" style="font-size:10px;padding:1px 6px;cursor:pointer;background:#0f3460;color:#a8b8d8;border:1px solid #1a4080;border-radius:2px;margin-left:4px;" title="Apply gradient from left to right">Set</button>
+        </div>
+        <div class="prop-row"><label></label><button id="propGrpDup" style="width:100%;font-size:11px;cursor:pointer;background:#2a4a6a;color:#d0e0f0;border:1px solid #3a6a9a;padding:3px 6px;border-radius:2px;" title="Duplicate entire group (sprites + new group)">Duplica gruppo</button></div>
       ` : `
         ${Object.keys(state.groups).length > 0 ? `
           <div class="prop-row"><label>Group</label>
@@ -1468,6 +1528,7 @@ function updateProperties() {
         </div>
         <div class="prop-row"><label>Hidden</label><input type="checkbox" id="propTrapHidden" ${el.trapHidden!==false?'checked':''}></div>
         <div class="prop-row"><label>Corridor</label><input type="number" id="propTrapCorridor" value="${el.trapCorridor!=null?el.trapCorridor:4}" min="0" max="4" step="1" style="width:40px;"><span style="color:#667;font-size:10px;margin-left:2px;">0-3/4=all</span></div>
+        <div class="prop-row"><label>Question</label><input type="number" id="propTrapQuestion" value="${el.trapQuestion!=null?el.trapQuestion:0}" min="0" max="10" step="1" style="width:40px;"><span style="color:#667;font-size:10px;margin-left:2px;">1-10/0=all</span></div>
         <div class="prop-row" style="flex-direction:column;align-items:flex-start;">
           <label style="margin-bottom:2px;">Offset (frames)</label>
           <div style="display:flex;gap:4px;">
@@ -1588,6 +1649,30 @@ function updateProperties() {
         render();
       });
     }
+
+    // Group gradient
+    const grpGradStart = document.getElementById('propGrpGradStart');
+    const grpGradEnd = document.getElementById('propGrpGradEnd');
+    const grpGradSet = document.getElementById('propGrpGradSet');
+    if (grpGradStart) {
+      grpGradStart.addEventListener('input', () => { lastGradientStart = grpGradStart.value; });
+      grpGradStart.addEventListener('change', () => { lastGradientStart = grpGradStart.value; });
+    }
+    if (grpGradEnd) {
+      grpGradEnd.addEventListener('input', () => { lastGradientEnd = grpGradEnd.value; });
+      grpGradEnd.addEventListener('change', () => { lastGradientEnd = grpGradEnd.value; });
+    }
+    if (grpGradSet) {
+      grpGradSet.onclick = () => {
+        applyGroupGradient(el.groupId, lastGradientStart, lastGradientEnd);
+      };
+    }
+
+    // Duplicate group
+    const grpDup = document.getElementById('propGrpDup');
+    if (grpDup) {
+      grpDup.onclick = () => duplicateGroup(el.groupId);
+    }
   }
 
   // Add to group button (for ungrouped elements)
@@ -1686,6 +1771,7 @@ function updateProperties() {
   }
   bind('propTrapHidden', 'trapHidden', inp => inp.checked);
   bind('propTrapCorridor', 'trapCorridor', inp => Math.min(4, Math.max(0, parseInt(inp.value) || 0)));
+  bind('propTrapQuestion', 'trapQuestion', inp => Math.min(10, Math.max(0, parseInt(inp.value) || 0)));
   bind('propTrapTweenDur', 'trapTweenDuration', inp => Math.max(1, parseInt(inp.value) || 500));
   bind('propTrapTweenEase', 'trapTweenEase');
 
@@ -2292,6 +2378,7 @@ function buildLevelData() {
           out.trapAnimType = el.trapAnimType || 'frames';
           out.trapHidden = el.trapHidden !== false;
           out.trapCorridor = el.trapCorridor != null ? el.trapCorridor : 4;
+          out.trapQuestion = el.trapQuestion != null ? el.trapQuestion : 0;
           out.trapOffset = el.trapOffset || [0, 0, 0, 0];
           if (el.trapAnimType === 'tween') {
             out.trapTween = el.trapTween || [];

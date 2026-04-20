@@ -39,9 +39,19 @@ FloQuest.BootScene = class BootScene extends Phaser.Scene {
         this.load.image('character', 'img/character.png');
         this.load.image('button', 'img/button.png');
 
-        // Game data (JSON)
+        // Game data (JSON). Questions/bonus are fetched from the Worker API
+        // at journey-start time (see JourneySelectScene + QuestionsAPI).
         this.load.json('journeys', 'data/journeys.json');
-        this.load.json('questions', 'data/questions.json');
+
+        // Per-journey 640x480 artwork for LevelComplete / GameOver.
+        // File missing → silenced by loaderror handler; scene falls back to placeholder.
+        this.load.on('loaderror', function(file) {
+            console.warn('BootScene: asset mancante —', file.src);
+        });
+        for (var jid = 1; jid <= 6; jid++) {
+            this.load.image('journey_' + jid + '_victory', 'levels/' + jid + '/victory.png');
+            this.load.image('journey_' + jid + '_defeat',  'levels/' + jid + '/defeat.png');
+        }
 
         // Load player spritesheets + normal maps
         FloQuest.Player.preload(this);
@@ -50,7 +60,6 @@ FloQuest.BootScene = class BootScene extends Phaser.Scene {
     create() {
         // Parse JSON data and make available globally
         FloQuest.Journeys = this.cache.json.get('journeys');
-        FloQuest.AllQuestions = this.cache.json.get('questions');
 
         // Parse hex color strings to numbers in level data
         FloQuest.Journeys.forEach(function(journey) {
@@ -65,9 +74,9 @@ FloQuest.BootScene = class BootScene extends Phaser.Scene {
             });
         });
 
-        // Default: set first journey as active (for backward compatibility)
+        // Default: set first journey as active (for backward compatibility).
+        // FloQuest.Questions / BonusQuestions are populated later by QuestionsAPI.
         FloQuest.Levels = FloQuest.Journeys[0].levels;
-        FloQuest.Questions = FloQuest.AllQuestions['1'];
 
         // Generate procedural textures (used by menu/UI scenes)
         FloQuest.TextureGenerator.generate(this);

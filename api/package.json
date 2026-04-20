@@ -1,0 +1,12 @@
+{
+    "name": "floquest-api",
+    "private": true,
+    "scripts": {
+        "dev": "wrangler dev",
+        "deploy": "wrangler deploy",
+        "dump": "bash dump.sh"
+    },
+    "devDependencies": {
+        "wrangler": "^4.0.0"
+    }
+}
