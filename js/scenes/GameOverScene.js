@@ -18,9 +18,9 @@ FloQuest.GameOverScene = class GameOverScene extends Phaser.Scene {
         bg.fillStyle(0x0a0a0a, 1);
         bg.fillRect(0, 0, W, H);
 
-        // Journey-specific defeat artwork (640x480). Placeholder if missing.
+        // Journey + level specific defeat artwork (640x480). Placeholder if missing.
         var jid = FloQuest.ScoreManager.currentJourney || 1;
-        var key = 'journey_' + jid + '_defeat';
+        var key = 'journey_' + jid + '_level_' + levelNum + '_defeat';
         var imgX = W / 2, imgY = 280;
         if (this.textures.exists(key)) {
             this.add.image(imgX, imgY, key);
@@ -30,7 +30,7 @@ FloQuest.GameOverScene = class GameOverScene extends Phaser.Scene {
             ph.fillRect(imgX - 320, imgY - 240, 640, 480);
             ph.lineStyle(2, 0x8b0000, 0.6);
             ph.strokeRect(imgX - 320, imgY - 240, 640, 480);
-            this.add.text(imgX, imgY, '[ defeat image — journey ' + jid + ' ]', {
+            this.add.text(imgX, imgY, '[ defeat image — journey ' + jid + ' lvl ' + levelNum + ' ]', {
                 fontSize: '20px', fontFamily: 'Georgia, serif', color: '#e74c3c'
             }).setOrigin(0.5);
         }

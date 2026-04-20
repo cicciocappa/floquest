@@ -66,7 +66,7 @@ FloQuest.LevelBackground = {
             keyMap[entry[0]] = 'lvl_' + entry[1].name;
         });
 
-        var created = { sprites: [], lights: [], trapSprites: [], pickSprite: null, skyHeight: skyHeight, lighting: lighting };
+        var created = { sprites: [], lights: [], trapSprites: [], endingSprites: [], pickSprite: null, skyHeight: skyHeight, lighting: lighting };
 
         // Sort non-light elements by layer
         var visual = elements.filter(function(el) { return el.type !== 'light'; });
@@ -108,13 +108,15 @@ FloQuest.LevelBackground = {
             }
 
             var isTrap = !!el.trap;
+            var isEnding = !!el.ending && !isTrap;
 
             // Animated spritesheet
             if (texInfo && texInfo.frameWidth) {
-                // Trap sprites get a one-shot anim; normal sprites loop
+                // Trap/ending sprites get a one-shot anim; normal sprites loop
                 var animKey = 'lvlanim_' + el.texId;
-                var trapAnimKey = 'lvlanim_trap_' + el.id;
-                var playKey = isTrap ? trapAnimKey : animKey;
+                var oneShot = isTrap || isEnding;
+                var oneShotKey = isTrap ? ('lvlanim_trap_' + el.id) : ('lvlanim_ending_' + el.id);
+                var playKey = oneShot ? oneShotKey : animKey;
 
                 if (!scene.anims.exists(playKey)) {
                     var totalFrames = scene.textures.get(imgKey).frameTotal;
@@ -123,7 +125,7 @@ FloQuest.LevelBackground = {
                         key: playKey,
                         frames: scene.anims.generateFrameNumbers(imgKey, { start: 0, end: fc - 1 }),
                         frameRate: texInfo.frameRate || 10,
-                        repeat: isTrap ? 0 : -1
+                        repeat: oneShot ? 0 : -1
                     });
                 }
                 var animSprite = scene.add.sprite(el.x, el.y, imgKey, 0)
@@ -137,9 +139,16 @@ FloQuest.LevelBackground = {
                     animSprite.play(playKey);
                     created.pickSprite = animSprite;
                 } else if (isTrap) {
-                    // Trap: don't auto-play, hide if configured, collect separately
                     if (el.trapHidden !== false) animSprite.setVisible(false);
                     created.trapSprites.push({
+                        sprite: animSprite,
+                        el: el,
+                        animKey: playKey,
+                        origX: el.x, origY: el.y
+                    });
+                } else if (isEnding) {
+                    if (el.endingHidden !== false) animSprite.setVisible(false);
+                    created.endingSprites.push({
                         sprite: animSprite,
                         el: el,
                         animKey: playKey,
@@ -181,6 +190,21 @@ FloQuest.LevelBackground = {
                         });
                     }
                     created.trapSprites.push({
+                        sprite: sprite,
+                        el: el,
+                        animKey: null,
+                        origX: el.x, origY: el.y
+                    });
+                } else if (isEnding) {
+                    if (el.endingHidden !== false) sprite.setVisible(false);
+                    if (el.endingAnimType === 'tween' && el.endingTween) {
+                        el.endingTween.forEach(function(tw) {
+                            if (tw.from != null && tw.prop !== 'x' && tw.prop !== 'y') {
+                                sprite[tw.prop] = tw.from;
+                            }
+                        });
+                    }
+                    created.endingSprites.push({
                         sprite: sprite,
                         el: el,
                         animKey: null,

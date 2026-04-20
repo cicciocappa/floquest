@@ -47,6 +47,9 @@ FloQuest.GameScene = class GameScene extends Phaser.Scene {
         // Trap sprites from level layout
         this._trapSprites = (this._bgData && this._bgData.trapSprites) || [];
 
+        // Ending sprites — fired once at level complete, start of final walk_right cycles
+        this._endingSprites = (this._bgData && this._bgData.endingSprites) || [];
+
         // Pick sprite (object the player picks up at level start)
         this._pickSprite = (this._bgData && this._bgData.pickSprite) || null;
 
@@ -110,57 +113,70 @@ FloQuest.GameScene = class GameScene extends Phaser.Scene {
             }
         });
 
-        // DEBUG: light controls panel
-        var ambVal = ambR || 10;
-        var lightMultVal = (lt.lightMultiplier != null ? lt.lightMultiplier : 1.0) * brightness;
-        var debugPanel = document.createElement('div');
-        debugPanel.style.cssText = 'position:fixed;top:8px;right:8px;z-index:9999;background:#222;border:1px solid #555;border-radius:6px;padding:10px;font:12px monospace;color:#ccc;opacity:0.9;min-width:220px;';
-        debugPanel.innerHTML = [
-            '<div style="color:#888;font-size:10px;margin-bottom:6px;">LIGHT DEBUG</div>',
-            '<div style="margin-bottom:6px;">',
-            '  <label>Ambient: <span id="dbgAmbVal">' + ambHex + '</span></label><br>',
-            '  <input type="range" id="dbgAmb" min="0" max="255" value="' + ambVal + '" style="width:100%;">',
-            '</div>',
-            '<div style="margin-bottom:6px;">',
-            '  <label>Level lights mult: <span id="dbgLvlVal">' + lightMultVal.toFixed(1) + '</span></label><br>',
-            '  <input type="range" id="dbgLvl" min="0" max="50" value="' + Math.round(lightMultVal * 10) + '" step="1" style="width:100%;">',
-            '</div>',
-            '<button id="dbgToggle" style="width:100%;padding:4px;background:#333;color:#0f0;border:1px solid #0f0;font:bold 12px monospace;cursor:pointer;border-radius:3px;">Lights: ON</button>',
-        ].join('');
-        document.body.appendChild(debugPanel);
+        // DEBUG: light controls panel — gated by ?debug in URL
+        var debugEnabled = new URLSearchParams(window.location.search).has('debug');
+        if (debugEnabled) {
+            var ambVal = ambR || 10;
+            var lightMultVal = (lt.lightMultiplier != null ? lt.lightMultiplier : 1.0) * brightness;
+            var forceOn = !!window._floquestForceCorrect;
+            var debugPanel = document.createElement('div');
+            debugPanel.style.cssText = 'position:fixed;top:8px;right:8px;z-index:9999;background:#222;border:1px solid #555;border-radius:6px;padding:10px;font:12px monospace;color:#ccc;opacity:0.9;min-width:220px;';
+            debugPanel.innerHTML = [
+                '<div style="color:#888;font-size:10px;margin-bottom:6px;">DEBUG</div>',
+                '<div style="margin-bottom:6px;">',
+                '  <label>Ambient: <span id="dbgAmbVal">' + ambHex + '</span></label><br>',
+                '  <input type="range" id="dbgAmb" min="0" max="255" value="' + ambVal + '" style="width:100%;">',
+                '</div>',
+                '<div style="margin-bottom:6px;">',
+                '  <label>Level lights mult: <span id="dbgLvlVal">' + lightMultVal.toFixed(1) + '</span></label><br>',
+                '  <input type="range" id="dbgLvl" min="0" max="50" value="' + Math.round(lightMultVal * 10) + '" step="1" style="width:100%;">',
+                '</div>',
+                '<button id="dbgToggle" style="width:100%;padding:4px;background:#333;color:#0f0;border:1px solid #0f0;font:bold 12px monospace;cursor:pointer;border-radius:3px;margin-bottom:4px;">Lights: ON</button>',
+                '<button id="dbgForceCorrect" style="width:100%;padding:4px;background:#333;color:' + (forceOn ? '#ff0' : '#888') + ';border:1px solid ' + (forceOn ? '#ff0' : '#555') + ';font:bold 12px monospace;cursor:pointer;border-radius:3px;">Force Correct: ' + (forceOn ? 'ON' : 'OFF') + '</button>',
+            ].join('');
+            document.body.appendChild(debugPanel);
 
-        var lvlLightBaseIntensities = [];
-        self.lights.lights.forEach(function(l) {
-            if (l !== self.playerLight) lvlLightBaseIntensities.push({ light: l, base: l.intensity });
-        });
+            var lvlLightBaseIntensities = [];
+            self.lights.lights.forEach(function(l) {
+                if (l !== self.playerLight) lvlLightBaseIntensities.push({ light: l, base: l.intensity });
+            });
 
-        document.getElementById('dbgAmb').oninput = function() {
-            var v = parseInt(this.value);
-            self.lights.setAmbientColor(Phaser.Display.Color.GetColor(v, v, Math.min(255, v + 6)));
-            document.getElementById('dbgAmbVal').textContent = v.toString(16).padStart(2, '0').repeat(3);
-        };
-        document.getElementById('dbgLvl').oninput = function() {
-            var mult = parseInt(this.value) / 10;
-            document.getElementById('dbgLvlVal').textContent = mult.toFixed(1);
-            lvlLightBaseIntensities.forEach(function(entry) { entry.light.intensity = entry.base * mult; });
-        };
+            document.getElementById('dbgAmb').oninput = function() {
+                var v = parseInt(this.value);
+                self.lights.setAmbientColor(Phaser.Display.Color.GetColor(v, v, Math.min(255, v + 6)));
+                document.getElementById('dbgAmbVal').textContent = v.toString(16).padStart(2, '0').repeat(3);
+            };
+            document.getElementById('dbgLvl').oninput = function() {
+                var mult = parseInt(this.value) / 10;
+                document.getElementById('dbgLvlVal').textContent = mult.toFixed(1);
+                lvlLightBaseIntensities.forEach(function(entry) { entry.light.intensity = entry.base * mult; });
+            };
 
-        var lightsOn = true;
-        document.getElementById('dbgToggle').onclick = function() {
-            var btn = this;
-            if (lightsOn) {
-                self.lights.setAmbientColor(0xffffff);
-                lvlLightBaseIntensities.forEach(function(entry) { entry.light.intensity = 0; });
-                btn.textContent = 'Lights: OFF'; btn.style.color = '#f44'; btn.style.borderColor = '#f44';
-            } else {
-                document.getElementById('dbgAmb').dispatchEvent(new Event('input'));
-                document.getElementById('dbgLvl').dispatchEvent(new Event('input'));
-                btn.textContent = 'Lights: ON'; btn.style.color = '#0f0'; btn.style.borderColor = '#0f0';
-            }
-            lightsOn = !lightsOn;
-        };
+            var lightsOn = true;
+            document.getElementById('dbgToggle').onclick = function() {
+                var btn = this;
+                if (lightsOn) {
+                    self.lights.setAmbientColor(0xffffff);
+                    lvlLightBaseIntensities.forEach(function(entry) { entry.light.intensity = 0; });
+                    btn.textContent = 'Lights: OFF'; btn.style.color = '#f44'; btn.style.borderColor = '#f44';
+                } else {
+                    document.getElementById('dbgAmb').dispatchEvent(new Event('input'));
+                    document.getElementById('dbgLvl').dispatchEvent(new Event('input'));
+                    btn.textContent = 'Lights: ON'; btn.style.color = '#0f0'; btn.style.borderColor = '#0f0';
+                }
+                lightsOn = !lightsOn;
+            };
 
-        this._debugLightBtn = debugPanel;
+            document.getElementById('dbgForceCorrect').onclick = function() {
+                window._floquestForceCorrect = !window._floquestForceCorrect;
+                var on = window._floquestForceCorrect;
+                this.textContent = 'Force Correct: ' + (on ? 'ON' : 'OFF');
+                this.style.color = on ? '#ff0' : '#888';
+                this.style.borderColor = on ? '#ff0' : '#555';
+            };
+
+            this._debugLightBtn = debugPanel;
+        }
 
         // Clean up when scene shuts down
         this.events.on('shutdown', function() {
@@ -500,6 +516,10 @@ FloQuest.GameScene = class GameScene extends Phaser.Scene {
             if (!this.levelRunning) return;
 
             var answer = this.questionUI.lockIn();
+            if (window._floquestForceCorrect) {
+                answer.correct = true;
+                answer.timedOut = false;
+            }
             var curLockX = this.player.x;
             var hasNext = q + 1 < CFG.TOTAL_QUESTIONS;
 
@@ -621,8 +641,13 @@ FloQuest.GameScene = class GameScene extends Phaser.Scene {
         this._log('=== LEVEL COMPLETE ===');
         this.questionUI.hide();
 
+        // Ending sprites fire now, in parallel with the final walk_right reveal.
+        var endingPromise = this._scheduleEndingAnimations();
+
         // 5 walk_right to reveal the "goal reached" graphic at the end of the level.
         await this.step('walk_right', 5, 5 * WPX, 0);
+
+        await endingPromise;
 
         if (this.isWalking) {
             await this.step('walk_right_to_idle', 1, 0, 0);
@@ -698,6 +723,40 @@ FloQuest.GameScene = class GameScene extends Phaser.Scene {
                         resolve();
                     }
                 });
+            }));
+        });
+
+        return promises.length > 0 ? Promise.all(promises) : Promise.resolve();
+    }
+
+    /**
+     * Fire every ending sprite at once (frame anim or tween).
+     * Returns a Promise that resolves when all have finished.
+     */
+    _scheduleEndingAnimations() {
+        var scene = this;
+        var promises = [];
+
+        this._endingSprites.forEach(function(ending) {
+            var el = ending.el;
+            promises.push(new Promise(function(resolve) {
+                if (el.endingHidden !== false) ending.sprite.setVisible(true);
+
+                if (el.endingAnimType === 'tween' && el.endingTween) {
+                    var tweenConfig = {
+                        targets: ending.sprite,
+                        duration: el.endingTweenDuration || 500,
+                        ease: el.endingTweenEase || 'Linear',
+                        onComplete: resolve
+                    };
+                    el.endingTween.forEach(function(tw) { tweenConfig[tw.prop] = tw.to; });
+                    scene.tweens.add(tweenConfig);
+                } else if (ending.animKey) {
+                    ending.sprite.play(ending.animKey);
+                    ending.sprite.once('animationcomplete', resolve);
+                } else {
+                    resolve();
+                }
             }));
         });
 

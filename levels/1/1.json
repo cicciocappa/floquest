@@ -770,7 +770,7 @@
     {
       "id": 98,
       "type": "rect",
-      "x": 2800,
+      "x": 3100,
       "y": 0,
       "w": 7600,
       "h": 224,
@@ -2683,7 +2683,7 @@
       "id": 260,
       "type": "sprite",
       "x": 9222,
-      "y": 386,
+      "y": 401,
       "groupId": 28,
       "w": 73,
       "h": 32,
@@ -2782,7 +2782,7 @@
       "id": 268,
       "type": "sprite",
       "x": 9107,
-      "y": 364,
+      "y": 379,
       "groupId": 28,
       "w": 35,
       "h": 54,
@@ -2852,7 +2852,7 @@
       "id": 276,
       "type": "sprite",
       "x": 9157,
-      "y": 365,
+      "y": 380,
       "groupId": 28,
       "w": 54,
       "h": 64,
@@ -2937,7 +2937,7 @@
       "id": 283,
       "type": "sprite",
       "x": 9328,
-      "y": 377,
+      "y": 392,
       "groupId": 28,
       "w": 25,
       "h": 50,
@@ -2949,7 +2949,7 @@
       "id": 284,
       "type": "sprite",
       "x": 9049,
-      "y": 372,
+      "y": 387,
       "groupId": 28,
       "w": 25,
       "h": 50,
@@ -2962,7 +2962,7 @@
       "type": "rect",
       "x": 8400,
       "y": 224,
-      "w": 2000,
+      "w": 2300,
       "h": 736,
       "texId": "stone_floor",
       "layer": 0,
@@ -3897,7 +3897,7 @@
       "trapAnimType": "tween",
       "trapHidden": true,
       "trapCorridor": 4,
-      "trapQuestion": 2,
+      "trapQuestion": 3,
       "trapOffset": [
         6,
         14,
@@ -3933,7 +3933,7 @@
       "trapAnimType": "tween",
       "trapHidden": true,
       "trapCorridor": 4,
-      "trapQuestion": 2,
+      "trapQuestion": 4,
       "trapOffset": [
         6,
         14,
@@ -3969,7 +3969,7 @@
       "trapAnimType": "tween",
       "trapHidden": true,
       "trapCorridor": 4,
-      "trapQuestion": 2,
+      "trapQuestion": 5,
       "trapOffset": [
         6,
         14,
@@ -4005,7 +4005,7 @@
       "trapAnimType": "tween",
       "trapHidden": true,
       "trapCorridor": 4,
-      "trapQuestion": 2,
+      "trapQuestion": 6,
       "trapOffset": [
         6,
         14,
@@ -4041,7 +4041,7 @@
       "trapAnimType": "tween",
       "trapHidden": true,
       "trapCorridor": 4,
-      "trapQuestion": 2,
+      "trapQuestion": 7,
       "trapOffset": [
         6,
         14,
@@ -4077,7 +4077,7 @@
       "trapAnimType": "tween",
       "trapHidden": true,
       "trapCorridor": 4,
-      "trapQuestion": 2,
+      "trapQuestion": 8,
       "trapOffset": [
         6,
         14,
@@ -4113,7 +4113,7 @@
       "trapAnimType": "tween",
       "trapHidden": true,
       "trapCorridor": 4,
-      "trapQuestion": 2,
+      "trapQuestion": 9,
       "trapOffset": [
         6,
         14,
@@ -4187,7 +4187,7 @@
       "trapAnimType": "tween",
       "trapHidden": true,
       "trapCorridor": 4,
-      "trapQuestion": 2,
+      "trapQuestion": 10,
       "trapOffset": [
         6,
         14,
@@ -4220,6 +4220,40 @@
       "layer": 5,
       "tile": false,
       "tint": "#393838"
+    },
+    {
+      "id": 376,
+      "type": "sprite",
+      "x": 10100,
+      "y": 526,
+      "w": 300,
+      "h": 144,
+      "texId": "botola",
+      "layer": 1,
+      "tile": false
+    },
+    {
+      "id": 377,
+      "type": "sprite",
+      "x": 10100,
+      "y": 526,
+      "w": 300,
+      "h": 144,
+      "texId": "copertura_botola",
+      "layer": 2,
+      "tile": false,
+      "ending": true,
+      "endingAnimType": "tween",
+      "endingHidden": false,
+      "endingTween": [
+        {
+          "prop": "x",
+          "from": 10100,
+          "to": 10293
+        }
+      ],
+      "endingTweenDuration": 1000,
+      "endingTweenEase": "Quad.easeOut"
     }
   ],
   "groups": {
@@ -4398,15 +4432,15 @@
       "w": 122,
       "h": 314
     },
-    "statue_anubi": {
-      "name": "statue_anubi",
-      "w": 183,
-      "h": 320
-    },
     "temple_wall": {
       "name": "temple_wall",
       "w": 168,
       "h": 224
+    },
+    "statue_anubi": {
+      "name": "statue_anubi",
+      "w": 183,
+      "h": 320
     },
     "statue_cat": {
       "name": "statue_cat",
@@ -4436,15 +4470,20 @@
       "frameHeight": 48,
       "frameRate": 10
     },
+    "torch": {
+      "name": "torch",
+      "w": 18,
+      "h": 48
+    },
     "statue_anubi_back": {
       "name": "statue_anubi_back",
       "w": 159,
       "h": 320
     },
-    "torch": {
-      "name": "torch",
-      "w": 18,
-      "h": 48
+    "darts": {
+      "name": "darts",
+      "w": 285,
+      "h": 43
     },
     "brazier": {
       "name": "brazier",
@@ -4456,30 +4495,25 @@
       "w": 173,
       "h": 163
     },
-    "darts": {
-      "name": "darts",
-      "w": 285,
-      "h": 43
+    "broken_anubi_statue": {
+      "name": "broken_anubi_statue",
+      "w": 138,
+      "h": 135
     },
     "broken_statue_base": {
       "name": "broken_statue_base",
       "w": 114,
       "h": 173
     },
-    "broken_anubi_statue": {
-      "name": "broken_anubi_statue",
-      "w": 138,
-      "h": 135
+    "jar2.": {
+      "name": "jar2.",
+      "w": 35,
+      "h": 54
     },
     "fragments1": {
       "name": "fragments1",
       "w": 138,
       "h": 66
-    },
-    "jar2.": {
-      "name": "jar2.",
-      "w": 35,
-      "h": 54
     },
     "jar1": {
       "name": "jar1",
@@ -4506,11 +4540,6 @@
       "w": 54,
       "h": 64
     },
-    "canopio": {
-      "name": "canopio",
-      "w": 25,
-      "h": 50
-    },
     "papiri2": {
       "name": "papiri2",
       "w": 73,
@@ -4521,20 +4550,35 @@
       "w": 72,
       "h": 28
     },
+    "canopio": {
+      "name": "canopio",
+      "w": 25,
+      "h": 50
+    },
     "sarcofago": {
       "name": "sarcofago",
       "w": 119,
       "h": 290
+    },
+    "statua_thoth_back": {
+      "name": "statua_thoth_back",
+      "w": 143,
+      "h": 320
     },
     "statua_thoth": {
       "name": "statua_thoth",
       "w": 144,
       "h": 320
     },
-    "statua_thoth_back": {
-      "name": "statua_thoth_back",
-      "w": 143,
-      "h": 320
+    "copertura_botola": {
+      "name": "copertura_botola",
+      "w": 300,
+      "h": 144
+    },
+    "botola": {
+      "name": "botola",
+      "w": 300,
+      "h": 144
     }
   }
 }

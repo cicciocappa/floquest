@@ -20,9 +20,9 @@ FloQuest.LevelCompleteScene = class LevelCompleteScene extends Phaser.Scene {
         bg.fillStyle(c.bg, 1);
         bg.fillRect(0, 0, W, H);
 
-        // Journey-specific victory artwork (640x480). Placeholder if missing.
+        // Journey + level specific victory artwork (640x480). Placeholder if missing.
         var jid = FloQuest.ScoreManager.currentJourney || 1;
-        var key = 'journey_' + jid + '_victory';
+        var key = 'journey_' + jid + '_level_' + levelNum + '_victory';
         var imgX = W / 2, imgY = 280;
         if (this.textures.exists(key)) {
             this.add.image(imgX, imgY, key);
@@ -32,7 +32,7 @@ FloQuest.LevelCompleteScene = class LevelCompleteScene extends Phaser.Scene {
             ph.fillRect(imgX - 320, imgY - 240, 640, 480);
             ph.lineStyle(2, c.accent, 0.6);
             ph.strokeRect(imgX - 320, imgY - 240, 640, 480);
-            this.add.text(imgX, imgY, '[ victory image — journey ' + jid + ' ]', {
+            this.add.text(imgX, imgY, '[ victory image — journey ' + jid + ' lvl ' + levelNum + ' ]', {
                 fontSize: '20px', fontFamily: 'Georgia, serif', color: '#ffffff'
             }).setOrigin(0.5);
         }

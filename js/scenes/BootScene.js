@@ -43,14 +43,18 @@ FloQuest.BootScene = class BootScene extends Phaser.Scene {
         // at journey-start time (see JourneySelectScene + QuestionsAPI).
         this.load.json('journeys', 'data/journeys.json');
 
-        // Per-journey 640x480 artwork for LevelComplete / GameOver.
+        // Per-journey per-level 640x480 artwork for LevelComplete / GameOver.
         // File missing → silenced by loaderror handler; scene falls back to placeholder.
         this.load.on('loaderror', function(file) {
             console.warn('BootScene: asset mancante —', file.src);
         });
         for (var jid = 1; jid <= 6; jid++) {
-            this.load.image('journey_' + jid + '_victory', 'levels/' + jid + '/victory.png');
-            this.load.image('journey_' + jid + '_defeat',  'levels/' + jid + '/defeat.png');
+            for (var lvl = 1; lvl <= 10; lvl++) {
+                this.load.image('journey_' + jid + '_level_' + lvl + '_victory',
+                    'levels/' + jid + '/' + lvl + '_victory.png');
+                this.load.image('journey_' + jid + '_level_' + lvl + '_defeat',
+                    'levels/' + jid + '/' + lvl + '_defeat.png');
+            }
         }
 
         // Load player spritesheets + normal maps

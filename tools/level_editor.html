@@ -480,6 +480,18 @@ function render() {
         ctx.font = Math.round(ts) + 'px monospace';
         ctx.fillText('T', el.x + 2 / state.zoom, el.y + ts + 1 / state.zoom);
       }
+      // Ending indicator: cyan dashed border + small "E" label
+      if (el.ending) {
+        ctx.strokeStyle = '#22ddff88';
+        ctx.lineWidth = 2 / state.zoom;
+        ctx.setLineDash([3 / state.zoom, 3 / state.zoom]);
+        ctx.strokeRect(el.x, el.y, el.w, el.h);
+        ctx.setLineDash([]);
+        var es = 10 / state.zoom;
+        ctx.fillStyle = '#22ddffcc';
+        ctx.font = Math.round(es) + 'px monospace';
+        ctx.fillText('E', el.x + el.w - es - 2 / state.zoom, el.y + es + 1 / state.zoom);
+      }
       if (isSel) {
         const isPrimary = el.id === state.primarySelectedId && state.selectedIds.size > 1;
         ctx.strokeStyle = isPrimary ? '#ffffff' : '#e94560';
@@ -923,6 +935,11 @@ function pasteClipboard() {
       newEl.trapTween = el.trapTween ? el.trapTween.map(t => ({...t})) : [];
       newEl.trapTweenDuration = el.trapTweenDuration; newEl.trapTweenEase = el.trapTweenEase;
     }
+    if (el.ending) {
+      newEl.ending = true; newEl.endingAnimType = el.endingAnimType; newEl.endingHidden = el.endingHidden;
+      newEl.endingTween = el.endingTween ? el.endingTween.map(t => ({...t})) : [];
+      newEl.endingTweenDuration = el.endingTweenDuration; newEl.endingTweenEase = el.endingTweenEase;
+    }
     state.elements.push(newEl);
     state.selectedIds.add(newEl.id);
   });
@@ -1234,6 +1251,11 @@ function duplicateGroup(gid) {
       newEl.trapTween = el.trapTween ? el.trapTween.map(t => ({...t})) : [];
       newEl.trapTweenDuration = el.trapTweenDuration; newEl.trapTweenEase = el.trapTweenEase;
     }
+    if (el.ending) {
+      newEl.ending = true; newEl.endingAnimType = el.endingAnimType; newEl.endingHidden = el.endingHidden;
+      newEl.endingTween = el.endingTween ? el.endingTween.map(t => ({...t})) : [];
+      newEl.endingTweenDuration = el.endingTweenDuration; newEl.endingTweenEase = el.endingTweenEase;
+    }
     state.elements.push(newEl);
     state.selectedIds.add(newEl.id);
     if (state.primarySelectedId == null) state.primarySelectedId = newEl.id;
@@ -1296,6 +1318,11 @@ function duplicateSelected() {
       newEl.trapCorridor = el.trapCorridor; newEl.trapQuestion = el.trapQuestion; newEl.trapOffset = el.trapOffset ? [...el.trapOffset] : [0,0,0,0];
       newEl.trapTween = el.trapTween ? el.trapTween.map(t => ({...t})) : [];
       newEl.trapTweenDuration = el.trapTweenDuration; newEl.trapTweenEase = el.trapTweenEase;
+    }
+    if (el.ending) {
+      newEl.ending = true; newEl.endingAnimType = el.endingAnimType; newEl.endingHidden = el.endingHidden;
+      newEl.endingTween = el.endingTween ? el.endingTween.map(t => ({...t})) : [];
+      newEl.endingTweenDuration = el.endingTweenDuration; newEl.endingTweenEase = el.endingTweenEase;
     }
     state.elements.push(newEl);
     state.selectedIds.add(newEl.id);
@@ -1548,6 +1575,31 @@ function updateProperties() {
             <label style="font-size:10px;color:#5a7aaa;text-transform:uppercase;letter-spacing:0.05em;">Tween Properties</label>
             <div id="trapTweenList"></div>
             <button id="btnAddTween" style="width:100%;margin-top:4px;padding:3px;font-size:11px;cursor:pointer;background:#0f3460;color:#a8b8d8;border:1px solid #1a4080;border-radius:2px;">+ Add Property</button>
+          </div>
+        </div>
+      </div>
+      <div class="prop-row"><label>Ending</label><input type="checkbox" id="propEnding" ${el.ending?'checked':''}></div>
+      <div id="endingDetails" style="display:${el.ending?'block':'none'}">
+        <div class="prop-row"><label>Anim type</label>
+          <select id="propEndingAnimType">
+            <option value="frames" ${(el.endingAnimType||'frames')==='frames'?'selected':''}>Frames</option>
+            <option value="tween" ${el.endingAnimType==='tween'?'selected':''}>Tween</option>
+          </select>
+        </div>
+        <div class="prop-row"><label>Hidden</label><input type="checkbox" id="propEndingHidden" ${el.endingHidden!==false?'checked':''}></div>
+        <div id="endingTweenDetails" style="display:${el.endingAnimType==='tween'?'block':'none'}">
+          <div class="prop-row"><label>Duration</label><input type="number" id="propEndingTweenDur" value="${el.endingTweenDuration||500}" min="1" step="50" style="width:60px;"><span style="color:#667;font-size:10px;margin-left:2px;">ms</span></div>
+          <div class="prop-row"><label>Ease</label>
+            <select id="propEndingTweenEase">
+              ${['Linear','Quad.easeIn','Quad.easeOut','Quad.easeInOut','Cubic.easeIn','Cubic.easeOut','Back.easeOut','Bounce.easeOut','Sine.easeIn','Sine.easeOut'].map(e =>
+                `<option value="${e}" ${(el.endingTweenEase||'Linear')===e?'selected':''}>${e}</option>`
+              ).join('')}
+            </select>
+          </div>
+          <div style="margin-top:4px;">
+            <label style="font-size:10px;color:#5a7aaa;text-transform:uppercase;letter-spacing:0.05em;">Tween Properties</label>
+            <div id="endingTweenList"></div>
+            <button id="btnAddEndingTween" style="width:100%;margin-top:4px;padding:3px;font-size:11px;cursor:pointer;background:#0f3460;color:#a8b8d8;border:1px solid #1a4080;border-radius:2px;">+ Add Property</button>
           </div>
         </div>
       </div>
@@ -1859,6 +1911,86 @@ function updateProperties() {
     });
   }
   renderTweenList();
+
+  // --- Ending properties ---
+  const endingCheck = document.getElementById('propEnding');
+  if (endingCheck) {
+    endingCheck.addEventListener('change', () => {
+      pushHistory();
+      el.ending = endingCheck.checked;
+      if (el.ending && !el.endingTween) el.endingTween = [];
+      document.getElementById('endingDetails').style.display = el.ending ? 'block' : 'none';
+      render();
+    });
+  }
+  bind('propEndingHidden', 'endingHidden', inp => inp.checked);
+  bind('propEndingTweenDur', 'endingTweenDuration', inp => Math.max(1, parseInt(inp.value) || 500));
+  bind('propEndingTweenEase', 'endingTweenEase');
+
+  const endingAnimSel = document.getElementById('propEndingAnimType');
+  if (endingAnimSel) {
+    endingAnimSel.addEventListener('change', () => {
+      pushHistory();
+      el.endingAnimType = endingAnimSel.value;
+      document.getElementById('endingTweenDetails').style.display = el.endingAnimType === 'tween' ? 'block' : 'none';
+    });
+  }
+
+  const endingTweenListEl = document.getElementById('endingTweenList');
+  const btnAddEndingTween = document.getElementById('btnAddEndingTween');
+  function renderEndingTweenList() {
+    if (!endingTweenListEl) return;
+    if (!el.endingTween) el.endingTween = [];
+    endingTweenListEl.innerHTML = '';
+    el.endingTween.forEach((tw, i) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:2px;margin-top:2px;align-items:center;';
+      row.innerHTML = `
+        <select class="endingTwProp" data-i="${i}" style="width:55px;font-size:10px;">
+          ${['x','y','alpha','angle','scaleX','scaleY','rotation'].map(p => `<option value="${p}" ${tw.prop===p?'selected':''}>${p}</option>`).join('')}
+        </select>
+        <input type="number" class="endingTwFrom" data-i="${i}" value="${tw.from||0}" step="0.1" style="width:48px;font-size:10px;" title="from">
+        <input type="number" class="endingTwTo" data-i="${i}" value="${tw.to||0}" step="0.1" style="width:48px;font-size:10px;" title="to">
+        <button class="endingTwDel" data-i="${i}" style="background:#800;color:#fff;border:none;padding:2px 4px;font-size:10px;cursor:pointer;border-radius:2px;">×</button>
+      `;
+      endingTweenListEl.appendChild(row);
+    });
+    endingTweenListEl.querySelectorAll('.endingTwProp').forEach(sel => {
+      sel.addEventListener('change', () => {
+        pushHistory();
+        el.endingTween[parseInt(sel.dataset.i)].prop = sel.value;
+      });
+    });
+    endingTweenListEl.querySelectorAll('.endingTwFrom').forEach(inp => {
+      inp.addEventListener('change', () => {
+        pushHistory();
+        el.endingTween[parseInt(inp.dataset.i)].from = parseFloat(inp.value) || 0;
+      });
+    });
+    endingTweenListEl.querySelectorAll('.endingTwTo').forEach(inp => {
+      inp.addEventListener('change', () => {
+        pushHistory();
+        el.endingTween[parseInt(inp.dataset.i)].to = parseFloat(inp.value) || 0;
+      });
+    });
+    endingTweenListEl.querySelectorAll('.endingTwDel').forEach(btn => {
+      btn.addEventListener('click', () => {
+        pushHistory();
+        el.endingTween.splice(parseInt(btn.dataset.i), 1);
+        renderEndingTweenList();
+      });
+    });
+  }
+
+  if (btnAddEndingTween) {
+    btnAddEndingTween.addEventListener('click', () => {
+      pushHistory();
+      if (!el.endingTween) el.endingTween = [];
+      el.endingTween.push({ prop: 'y', from: 0, to: 0 });
+      renderEndingTweenList();
+    });
+  }
+  renderEndingTweenList();
 }
 
 // =====================================================================
@@ -2373,6 +2505,16 @@ function buildLevelData() {
         if (el.flipY) out.flipY = true;
         if (el.rotation) out.rotation = el.rotation;
         if (el.pick) out.pick = true;
+        if (el.ending) {
+          out.ending = true;
+          out.endingAnimType = el.endingAnimType || 'frames';
+          out.endingHidden = el.endingHidden !== false;
+          if (el.endingAnimType === 'tween') {
+            out.endingTween = el.endingTween || [];
+            out.endingTweenDuration = el.endingTweenDuration || 500;
+            out.endingTweenEase = el.endingTweenEase || 'Linear';
+          }
+        }
         if (el.trap) {
           out.trap = true;
           out.trapAnimType = el.trapAnimType || 'frames';

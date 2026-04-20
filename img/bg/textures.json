@@ -4,12 +4,12 @@
     "path": "statue.png"
   },
   {
-    "name": "statue_anubi",
-    "path": "statue_anubi.png"
-  },
-  {
     "name": "temple_wall",
     "path": "temple_wall.png"
+  },
+  {
+    "name": "statue_anubi",
+    "path": "statue_anubi.png"
   },
   {
     "name": "statue_cat",
@@ -35,12 +35,16 @@
     "frameRate": 10
   },
   {
+    "name": "torch",
+    "path": "torch.png"
+  },
+  {
     "name": "statue_anubi_back",
     "path": "statue_anubi_back.png"
   },
   {
-    "name": "torch",
-    "path": "torch.png"
+    "name": "darts",
+    "path": "darts.png"
   },
   {
     "name": "brazier",
@@ -51,24 +55,20 @@
     "path": "broken_statue.png"
   },
   {
-    "name": "darts",
-    "path": "darts.png"
+    "name": "broken_anubi_statue",
+    "path": "broken_anubi_statue.png"
   },
   {
     "name": "broken_statue_base",
     "path": "broken_statue_base.png"
   },
   {
-    "name": "broken_anubi_statue",
-    "path": "broken_anubi_statue.png"
+    "name": "jar2.",
+    "path": "jar2..png"
   },
   {
     "name": "fragments1",
     "path": "fragments1.png"
-  },
-  {
-    "name": "jar2.",
-    "path": "jar2..png"
   },
   {
     "name": "jar1",
@@ -91,10 +91,6 @@
     "path": "statuette.png"
   },
   {
-    "name": "canopio",
-    "path": "canopio.png"
-  },
-  {
     "name": "papiri2",
     "path": "papiri2.png"
   },
@@ -103,15 +99,27 @@
     "path": "statuetta_rotta.png"
   },
   {
+    "name": "canopio",
+    "path": "canopio.png"
+  },
+  {
     "name": "sarcofago",
     "path": "sarcofago.png"
+  },
+  {
+    "name": "statua_thoth_back",
+    "path": "statua_thoth_back.png"
   },
   {
     "name": "statua_thoth",
     "path": "statua_thoth.png"
   },
   {
-    "name": "statua_thoth_back",
-    "path": "statua_thoth_back.png"
+    "name": "copertura_botola",
+    "path": "copertura_botola.png"
+  },
+  {
+    "name": "botola",
+    "path": "botola.png"
   }
 ]
