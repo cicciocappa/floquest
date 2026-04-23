@@ -29,9 +29,9 @@
                 "name": "L'Oracolo Sommerso (Grecia)",
                 "narration": "Seguendo le rotte del Mediterraneo, ti immergi nelle acque cristalline del Mar Egeo. Tra le rovine di una città inghiottita dal mare, l'antico Oracolo custodisce il secondo glifo. L'aria nelle bombole scarseggia: rispondi in fretta o l'abisso ti terrà con sé.",
                 "ending": "Una bolla d'aria ti spinge verso la superficie mentre stringi il glifo d'argento. Una nave mercantile ti attende per fare rotta verso le valli dell'India.",
-                "environment": "underwater_ruins",
-                "trap": "drowning",
-                "trapName": "Vortice marino",
+                "environment": "greek_ruins",
+                "trap": "trident",
+                "trapName": "Tridente",
                 "trapAnim": "falling",
                 "colors": {
                     "bg": "0x001f3f",

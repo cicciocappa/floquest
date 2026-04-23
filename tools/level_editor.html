@@ -131,6 +131,12 @@
 
 <!-- TOOLBAR -->
 <div id="toolbar">
+  <label>Journey:</label>
+  <select id="selJourney" title="Journey"></select>
+  <label>Level:</label>
+  <select id="selLevel" title="Level"></select>
+  <span id="envBadge" title="Environment folder" style="font-size:11px;color:#88aacc;padding:0 4px;">—</span>
+  <div class="sep"></div>
   <button id="btnSelect" class="active" title="Select / Move (V)">Select</button>
   <button id="btnRect" title="Draw tiled rectangle (R)">Tiled Rect</button>
   <button id="btnSprite" title="Place sprite (S)">Sprite</button>
@@ -158,6 +164,7 @@
   </select>
   <div class="sep"></div>
   <button id="btnGuides" class="active" title="Toggle guides">Guides</button>
+  <button id="btnPlayer" title="Show player cursor (click to select, arrow keys to move along trajectory)">Player</button>
   <div class="sep"></div>
   <button id="btnPreview" title="Phaser preview with lighting (F5)">Preview</button>
   <button id="btnExport" title="Export level layout JSON">Export</button>
@@ -228,11 +235,16 @@ const CANVAS_H = 960;
 const WALK_RIGHT_PX = 100;
 
 // =====================================================================
-// TEXTURE CATALOG — loaded from img/bg/textures.json at startup
+// TEXTURE CATALOG — per-level: img/bg/<environment>/textures.json
 // =====================================================================
-const TEX_CATALOG_URL = '../img/bg/textures.json';
-const TEX_BASE_PATH = '../img/bg/';
-let texCatalogHandle = null; // File System Access API handle for saving
+const JOURNEYS_URL = '../data/journeys.json';
+let TEX_CATALOG_URL = '';           // set when a level is selected
+let TEX_BASE_PATH = '';             // set when a level is selected
+let currentEnvironment = '';        // e.g. "temple_egypt"
+let currentJourneyId = 1;
+let currentLevelNum = 1;
+let journeysData = [];              // parsed data/journeys.json
+const texCatalogHandles = {};       // env -> FileSystemFileHandle (per level)
 
 // =====================================================================
 // STATE
@@ -265,7 +277,24 @@ const state = {
   drawStart: null,       // { x, y } for rect drawing
   rubberBand: null,      // { x, y, w, h } in world coords for box selection
   selectedTexId: null,
+  // Player cursor — a virtual element used to preview the character's
+  // trajectory inside the editor. Not saved to the level JSON.
+  player: {
+    visible: false,
+    selected: false,
+    x: 200,         // world x, character centre
+    corridor: 1,    // 0..3, only effective inside the per-Q corridor section
+  },
 };
+
+// Player sprite (128x128 frame, SPRITE_SCALE=2 in-game → 256x256 on screen).
+const PLAYER_FRAME = 128;
+const PLAYER_DRAW_SIZE = PLAYER_FRAME * 2;
+const PLAYER_HIT_W = 128;   // narrower hit box than the full frame
+const PLAYER_HIT_H = 200;
+const playerSpriteImg = new Image();
+playerSpriteImg.onload = () => render();
+playerSpriteImg.src = '../img/idle_color.png';
 
 // =====================================================================
 // UNDO / REDO
@@ -381,6 +410,40 @@ function getQuestionTrajectory(skyH, corridorIndex) {
   return points;
 }
 
+// Resolve the player's pose (y, layer, whether to allow up/down corridor switch)
+// for a given world-x and corridor choice. Mirrors GameScene depth rules.
+function getPlayerPose(px, corridor) {
+  const { corridors, centerY } = getCorridors(state.skyHeight);
+  const CORRIDOR_RANGE_START = WALK_RIGHT_PX * DECISION_WALK_STEPS;            // 300
+  const CORRIDOR_RANGE_END   = CORRIDOR_RANGE_START + DIAG_DX
+                             + WALK_RIGHT_PX * CORRIDOR_WALK_STEPS + DIAG_DX;  // 900
+
+  const qStart = TILE_INTRO;
+  const qEnd = TILE_INTRO + TILE_QUESTION * NUM_QUESTIONS;
+  if (px < qStart || px >= qEnd) {
+    return { y: centerY, layer: 2, inCorridorZone: false };
+  }
+  const qLocal = (px - qStart) % TILE_QUESTION;
+  if (qLocal < CORRIDOR_RANGE_START) {
+    return { y: centerY, layer: 2, inCorridorZone: false };
+  }
+  const corY = corridors[corridor].y;
+  const layer = corridor + 1.5;
+  if (qLocal < CORRIDOR_RANGE_START + DIAG_DX) {
+    const t = (qLocal - CORRIDOR_RANGE_START) / DIAG_DX;
+    return { y: centerY + (corY - centerY) * t, layer, inCorridorZone: true };
+  }
+  const straightEnd = CORRIDOR_RANGE_START + DIAG_DX + WALK_RIGHT_PX * CORRIDOR_WALK_STEPS;
+  if (qLocal < straightEnd) {
+    return { y: corY, layer, inCorridorZone: true };
+  }
+  if (qLocal < CORRIDOR_RANGE_END) {
+    const t = (qLocal - straightEnd) / DIAG_DX;
+    return { y: corY + (centerY - corY) * t, layer, inCorridorZone: true };
+  }
+  return { y: centerY, layer: 2, inCorridorZone: false };
+}
+
 // =====================================================================
 // CANVAS / RENDERING
 // =====================================================================
@@ -442,8 +505,19 @@ function render() {
     ctx.fillRect(0, c.laneTop, CANVAS_W, laneH);
   });
 
-  // Render elements sorted by layer (lights last, on top), skip hidden
-  const sorted = state.elements.filter(e => !e.hidden).sort((a, b) => {
+  // Render elements sorted by layer (lights last, on top), skip hidden.
+  // The player cursor is inserted as a virtual element so it layers correctly.
+  const renderList = state.elements.filter(e => !e.hidden).slice();
+  if (state.player.visible) {
+    const pose = getPlayerPose(state.player.x, state.player.corridor);
+    renderList.push({
+      type: 'player',
+      x: state.player.x,
+      y: pose.y,
+      layer: pose.layer,
+    });
+  }
+  const sorted = renderList.sort((a, b) => {
     if (a.type === 'light' && b.type !== 'light') return 1;
     if (a.type !== 'light' && b.type === 'light') return -1;
     return a.layer - b.layer;
@@ -457,6 +531,10 @@ function render() {
   });
 
   sorted.forEach(el => {
+    if (el.type === 'player') {
+      renderPlayerCursor(ctx, el.x, el.y);
+      return;
+    }
     const isSel = state.selectedIds.has(el.id);
     if (el.type === 'light') {
       renderLight(ctx, el, isSel);
@@ -738,6 +816,31 @@ function renderLight(c, el, selected) {
   }
 }
 
+function renderPlayerCursor(c, cx, cy) {
+  const size = PLAYER_DRAW_SIZE;
+  const half = size / 2;
+  const dx = cx - half;
+  const dy = cy - half;
+
+  if (playerSpriteImg.complete && playerSpriteImg.naturalWidth > 0) {
+    // Draw first frame of idle_color.png (128x128) scaled 2x.
+    c.drawImage(playerSpriteImg, 0, 0, PLAYER_FRAME, PLAYER_FRAME, dx, dy, size, size);
+  } else {
+    // Fallback: bounding box placeholder.
+    c.fillStyle = '#ffc84088';
+    c.fillRect(cx - PLAYER_HIT_W / 2, cy - PLAYER_HIT_H / 2, PLAYER_HIT_W, PLAYER_HIT_H);
+  }
+
+  // Selection outline
+  if (state.player.selected) {
+    c.strokeStyle = '#ffcc33';
+    c.lineWidth = 3 / state.zoom;
+    c.setLineDash([8 / state.zoom, 4 / state.zoom]);
+    c.strokeRect(cx - PLAYER_HIT_W / 2, cy - PLAYER_HIT_H / 2, PLAYER_HIT_W, PLAYER_HIT_H);
+    c.setLineDash([]);
+  }
+}
+
 function renderGuides(c) {
   const { corridors, centerY } = getCorridors(state.skyHeight);
 
@@ -847,10 +950,18 @@ function updateStatus() {
   document.getElementById('statusRight').textContent =
     'Zoom: ' + zoomPct + '%  |  Canvas: ' + CANVAS_W + 'x' + CANVAS_H;
   const hiddenCount = state.elements.filter(e => e.hidden).length;
-  document.getElementById('statusLeft').textContent =
-    'Elements: ' + state.elements.length +
+  let msg = 'Elements: ' + state.elements.length +
     (hiddenCount ? '  (' + hiddenCount + ' hidden)' : '') +
     (state.selectedIds.size > 0 ? '  |  Selected: ' + state.selectedIds.size : '');
+  if (state.player.selected) {
+    const pose = getPlayerPose(state.player.x, state.player.corridor);
+    msg += '  |  Player: x=' + Math.round(state.player.x) +
+           ' y=' + Math.round(pose.y) +
+           ' C' + (state.player.corridor + 1) +
+           ' L' + pose.layer +
+           (pose.inCorridorZone ? '' : ' [centre]');
+  }
+  document.getElementById('statusLeft').textContent = msg;
 }
 
 // =====================================================================
@@ -1039,20 +1150,32 @@ function selectElement(id) {
   state.selectedIds.clear();
   state.primarySelectedId = id;
   if (id != null) state.selectedIds.add(id);
+  state.player.selected = false;
   updateProperties();
 }
 
 function toggleSelect(id) {
   if (state.selectedIds.has(id)) state.selectedIds.delete(id);
   else state.selectedIds.add(id);
+  state.player.selected = false;
   updateProperties();
 }
 
 function selectAll() {
   state.selectedIds.clear();
   state.elements.forEach(el => { if (!el.hidden) state.selectedIds.add(el.id); });
+  state.player.selected = false;
   updateProperties();
   render();
+}
+
+function hitTestPlayer(wx, wy) {
+  if (!state.player.visible) return false;
+  const pose = getPlayerPose(state.player.x, state.player.corridor);
+  const cx = state.player.x;
+  const cy = pose.y;
+  return wx >= cx - PLAYER_HIT_W / 2 && wx <= cx + PLAYER_HIT_W / 2 &&
+         wy >= cy - PLAYER_HIT_H / 2 && wy <= cy + PLAYER_HIT_H / 2;
 }
 
 function getSelectedElements() {
@@ -2006,7 +2129,7 @@ function addTexture(file) {
       const texId = name;
       state.textures[texId] = {
         img, name,
-        path: file.name,  // filename for catalog (assumes img/bg/)
+        path: file.name,  // filename relative to img/bg/<environment>/
         w: img.naturalWidth, h: img.naturalHeight
       };
       refreshTexList();
@@ -2155,6 +2278,16 @@ viewport.addEventListener('mousedown', (e) => {
   }
 
   if (e.button !== 0) return;
+
+  // Player cursor hit-test takes priority when visible
+  if (state.player.visible && hitTestPlayer(w.x, w.y)) {
+    state.selectedIds.clear();
+    state.primarySelectedId = null;
+    state.player.selected = true;
+    updateProperties();
+    render();
+    return;
+  }
 
   if (state.tool === 'select') {
     // Check resize handle for single selection
@@ -2373,9 +2506,59 @@ document.getElementById('minimap').addEventListener('mousedown', (e) => {
 });
 
 // Keyboard
+// Arrow-key nudge: 1 px, or 10 px with Shift. Holding the key doesn't flood the undo stack.
+const ARROW_DELTAS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+const ARROW_HISTORY_DEBOUNCE_MS = 600;
+let lastArrowMoveTime = 0;
+
+function nudgeSelected(dx, dy, pushHist) {
+  if (state.selectedIds.size === 0) return;
+  if (pushHist) pushHistory();
+  state.elements.forEach(el => {
+    if (state.selectedIds.has(el.id)) {
+      el.x = Math.round(el.x + dx);
+      el.y = Math.round(el.y + dy);
+    }
+  });
+  updateProperties();
+  render();
+}
+
+function movePlayer(key, shift) {
+  if (key === 'ArrowLeft' || key === 'ArrowRight') {
+    const step = (shift ? 10 : 1) * (key === 'ArrowRight' ? 1 : -1);
+    state.player.x = Math.max(0, Math.min(CANVAS_W, state.player.x + step));
+  } else if (key === 'ArrowUp' || key === 'ArrowDown') {
+    const pose = getPlayerPose(state.player.x, state.player.corridor);
+    if (!pose.inCorridorZone) return;   // up/down only inside the per-Q corridor section
+    const dir = key === 'ArrowUp' ? -1 : 1;
+    state.player.corridor = Math.max(0, Math.min(3, state.player.corridor + dir));
+  }
+  updateStatus();
+  render();
+}
+
 document.addEventListener('keydown', (e) => {
   // Don't handle if typing in input
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+  if (ARROW_DELTAS[e.key]) {
+    if (state.player.selected) {
+      e.preventDefault();
+      movePlayer(e.key, e.shiftKey);
+      return;
+    }
+    if (state.selectedIds.size > 0) {
+      e.preventDefault();
+      const [ux, uy] = ARROW_DELTAS[e.key];
+      const step = e.shiftKey ? 10 : 1;
+      const now = Date.now();
+      const shouldPush = !e.repeat && (now - lastArrowMoveTime > ARROW_HISTORY_DEBOUNCE_MS);
+      lastArrowMoveTime = now;
+      nudgeSelected(ux * step, uy * step, shouldPush);
+      return;
+    }
+  }
 
   if (e.key === 'v' || e.key === 'V') setTool('select');
   if (e.key === 'r' || e.key === 'R') setTool('rect');
@@ -2403,6 +2586,7 @@ document.addEventListener('keydown', (e) => {
   }
   if (e.key === 'Escape') {
     state.selectedIds.clear();
+    state.player.selected = false;
     state.drawStart = null;
     updateProperties();
     render();
@@ -2443,6 +2627,17 @@ document.getElementById('btnGuides').onclick = () => {
   render();
 };
 
+function updatePlayerBtn() {
+  document.getElementById('btnPlayer').classList.toggle('active', state.player.visible);
+}
+document.getElementById('btnPlayer').onclick = () => {
+  state.player.visible = !state.player.visible;
+  if (!state.player.visible) state.player.selected = false;
+  else state.player.selected = true;  // auto-select when first shown so arrow keys work immediately
+  updatePlayerBtn();
+  render();
+};
+
 document.getElementById('inpSkyH').addEventListener('change', (e) => {
   pushHistory();
   state.skyHeight = parseInt(e.target.value) || 0;
@@ -2471,6 +2666,7 @@ texInput.addEventListener('change', () => {
 // =====================================================================
 function buildLevelData() {
   return {
+    environment: currentEnvironment,
     skyHeight: state.skyHeight,
     lighting: {
       ambientColor: state.ambientColor,
@@ -2567,6 +2763,10 @@ document.getElementById('fileImport').addEventListener('change', (e) => {
     try {
       const data = JSON.parse(reader.result);
       pushHistory();
+      if (data.environment && data.environment !== currentEnvironment) {
+        const match = findLevelByEnvironment(data.environment);
+        if (match) setLevel(match.journeyId, match.levelNum);
+      }
       state.skyHeight = data.skyHeight || 224;
       document.getElementById('inpSkyH').value = state.skyHeight;
       var lt = data.lighting || {};
@@ -2599,18 +2799,29 @@ document.getElementById('btnReloadTex').onclick = reloadAllTextures;
 // TEXTURE CATALOG — load from JSON, save with File System Access API
 // =====================================================================
 
-/** Load texture catalog from JSON, then load each image */
+/** Load texture catalog from JSON, then load each image. Clears prior textures. */
 function loadTextureCatalog() {
-  document.getElementById('statusLeft').textContent = 'Loading texture catalog...';
+  if (!TEX_CATALOG_URL) return;
+  state.textures = {};
+  state.selectedTexId = null;
+  refreshTexList();
+  render();
+  document.getElementById('statusLeft').textContent = `Loading textures (${currentEnvironment})...`;
 
-  fetch(TEX_CATALOG_URL)
+  const url = TEX_CATALOG_URL + '?t=' + Date.now();
+  const basePath = TEX_BASE_PATH;
+  const envAtStart = currentEnvironment;
+
+  fetch(url)
     .then(r => {
+      if (r.status === 404) return [];
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
     })
     .then(catalog => {
+      if (envAtStart !== currentEnvironment) return; // user switched levels mid-fetch
       if (!Array.isArray(catalog) || catalog.length === 0) {
-        document.getElementById('statusLeft').textContent = 'No textures in catalog';
+        document.getElementById('statusLeft').textContent = `No textures yet for ${envAtStart} — drop images to start`;
         return;
       }
       let loaded = 0;
@@ -2619,6 +2830,7 @@ function loadTextureCatalog() {
       catalog.forEach(entry => {
         const img = new Image();
         img.onload = () => {
+          if (envAtStart !== currentEnvironment) return;
           const texId = entry.name;
           const texData = { img, name: entry.name, path: entry.path, w: img.naturalWidth, h: img.naturalHeight };
           if (entry.frameWidth) { texData.frameWidth = entry.frameWidth; texData.frameHeight = entry.frameHeight; texData.frameRate = entry.frameRate || 10; }
@@ -2628,20 +2840,21 @@ function loadTextureCatalog() {
           if (loaded === total) {
             refreshTexList();
             render();
-            document.getElementById('statusLeft').textContent = `${total} textures loaded`;
+            document.getElementById('statusLeft').textContent = `${total} textures loaded (${envAtStart})`;
           }
         };
         img.onerror = () => {
+          if (envAtStart !== currentEnvironment) return;
           loaded++;
           console.warn('Failed to load texture:', entry.path);
           if (loaded === total) { refreshTexList(); render(); }
         };
-        img.src = TEX_BASE_PATH + entry.path;
+        img.src = basePath + entry.path;
       });
     })
     .catch(err => {
       console.warn('Could not load texture catalog:', err);
-      document.getElementById('statusLeft').textContent = 'No texture catalog found';
+      document.getElementById('statusLeft').textContent = `No texture catalog for ${envAtStart}`;
     });
 }
 
@@ -2660,28 +2873,128 @@ async function saveTextureCatalog() {
     alert('File System Access API not supported in this browser. Use Chrome or Edge.');
     return;
   }
+  if (!currentEnvironment) {
+    alert('No level selected.');
+    return;
+  }
 
+  const env = currentEnvironment;
   const catalog = buildCatalog();
   const json = JSON.stringify(catalog, null, 2) + '\n';
 
   try {
-    // Reuse handle if we have one, otherwise prompt
-    if (!texCatalogHandle) {
-      texCatalogHandle = await window.showSaveFilePicker({
+    // Reuse per-env handle if we have one, otherwise prompt
+    if (!texCatalogHandles[env]) {
+      texCatalogHandles[env] = await window.showSaveFilePicker({
         suggestedName: 'textures.json',
         types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
       });
     }
-    const writable = await texCatalogHandle.createWritable();
+    const writable = await texCatalogHandles[env].createWritable();
     await writable.write(json);
     await writable.close();
-    document.getElementById('statusLeft').textContent = `Texture catalog saved (${catalog.length} textures)`;
+    document.getElementById('statusLeft').textContent = `Texture catalog saved to ${env}/textures.json (${catalog.length})`;
   } catch (err) {
     if (err.name !== 'AbortError') {
       console.error('Save failed:', err);
       alert('Save failed: ' + err.message);
     }
   }
+}
+
+// =====================================================================
+// JOURNEY / LEVEL PICKER
+// =====================================================================
+
+function findLevelByEnvironment(env) {
+  for (let j = 0; j < journeysData.length; j++) {
+    const levels = journeysData[j].levels || [];
+    for (let l = 0; l < levels.length; l++) {
+      if (levels[l].environment === env) {
+        return { journeyId: journeysData[j].id, levelNum: levels[l].id };
+      }
+    }
+  }
+  return null;
+}
+
+function getLevel(journeyId, levelNum) {
+  const journey = journeysData.find(j => j.id === journeyId);
+  if (!journey) return null;
+  return (journey.levels || []).find(l => l.id === levelNum) || null;
+}
+
+function populateJourneyDropdown() {
+  const sel = document.getElementById('selJourney');
+  sel.innerHTML = journeysData.map(j =>
+    `<option value="${j.id}">${j.id} — ${j.name}</option>`
+  ).join('');
+  sel.value = String(currentJourneyId);
+}
+
+function populateLevelDropdown() {
+  const sel = document.getElementById('selLevel');
+  const journey = journeysData.find(j => j.id === currentJourneyId);
+  const levels = (journey && journey.levels) || [];
+  sel.innerHTML = levels.map(l =>
+    `<option value="${l.id}">${l.id} — ${l.name}</option>`
+  ).join('');
+  sel.value = String(currentLevelNum);
+}
+
+function setLevel(journeyId, levelNum) {
+  const journey = journeysData.find(j => j.id === journeyId);
+  if (!journey) return;
+  const level = (journey.levels || []).find(l => l.id === levelNum)
+             || (journey.levels || [])[0];
+  if (!level) return;
+
+  currentJourneyId = journey.id;
+  currentLevelNum = level.id;
+  currentEnvironment = level.environment || ('journey' + journey.id + '_level' + level.id);
+  TEX_BASE_PATH = '../img/bg/' + currentEnvironment + '/';
+  TEX_CATALOG_URL = TEX_BASE_PATH + 'textures.json';
+
+  document.getElementById('selJourney').value = String(currentJourneyId);
+  populateLevelDropdown();
+  document.getElementById('envBadge').textContent = currentEnvironment;
+
+  loadTextureCatalog();
+}
+
+document.getElementById('selJourney').addEventListener('change', (e) => {
+  const jid = parseInt(e.target.value, 10);
+  const journey = journeysData.find(j => j.id === jid);
+  const firstLevel = journey && journey.levels && journey.levels[0];
+  setLevel(jid, firstLevel ? firstLevel.id : 1);
+});
+document.getElementById('selLevel').addEventListener('change', (e) => {
+  setLevel(currentJourneyId, parseInt(e.target.value, 10));
+});
+
+function loadJourneysAndBoot() {
+  document.getElementById('statusLeft').textContent = 'Loading journeys...';
+  fetch(JOURNEYS_URL)
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(data => {
+      journeysData = Array.isArray(data) ? data : [];
+      if (journeysData.length === 0) {
+        document.getElementById('statusLeft').textContent = 'No journeys found';
+        return;
+      }
+      populateJourneyDropdown();
+      populateLevelDropdown();
+      const firstJourney = journeysData[0];
+      const firstLevel = (firstJourney.levels || [])[0];
+      setLevel(firstJourney.id, firstLevel ? firstLevel.id : 1);
+    })
+    .catch(err => {
+      console.error('Could not load journeys:', err);
+      document.getElementById('statusLeft').textContent = 'Failed to load data/journeys.json';
+    });
 }
 
 // =====================================================================
@@ -2693,7 +3006,7 @@ resize();
 // Center view vertically, start at x=0
 state.panY = -((cvs.height / state.zoom) - CANVAS_H) / 2;
 
-loadTextureCatalog();
+loadJourneysAndBoot();
 render();
 pushHistory(); // initial snapshot
 </script>

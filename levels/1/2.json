@@ -1,0 +1,188 @@
+{
+  "environment": "greek_ruins",
+  "skyHeight": 224,
+  "lighting": {
+    "ambientColor": "#666666",
+    "lightMultiplier": 1,
+    "playerLight": true,
+    "playerLightIntensity": 1,
+    "playerLightRadius": 400,
+    "playerLightColor": "#fff2dd"
+  },
+  "elements": [
+    {
+      "id": 1,
+      "type": "rect",
+      "x": 0,
+      "y": 224,
+      "w": 8000,
+      "h": 736,
+      "texId": "road",
+      "layer": 0,
+      "tile": true
+    },
+    {
+      "id": 2,
+      "type": "rect",
+      "x": 0,
+      "y": 0,
+      "w": 8000,
+      "h": 224,
+      "texId": "erba",
+      "layer": 0,
+      "tile": true
+    },
+    {
+      "id": 3,
+      "type": "rect",
+      "x": 0,
+      "y": 224,
+      "w": 8000,
+      "h": 31,
+      "texId": "cordolo",
+      "layer": 1,
+      "tile": true
+    },
+    {
+      "id": 4,
+      "type": "sprite",
+      "x": 1709,
+      "y": -105,
+      "w": 92,
+      "h": 320,
+      "texId": "colonna1",
+      "layer": 1,
+      "tile": false
+    },
+    {
+      "id": 5,
+      "type": "sprite",
+      "x": 1531,
+      "y": 612,
+      "w": 92,
+      "h": 320,
+      "texId": "colonna1",
+      "layer": 5,
+      "tile": false
+    },
+    {
+      "id": 6,
+      "type": "sprite",
+      "x": 279,
+      "y": 44,
+      "w": 190,
+      "h": 320,
+      "texId": "statua2",
+      "layer": 1,
+      "tile": false
+    },
+    {
+      "id": 7,
+      "type": "sprite",
+      "x": 292,
+      "y": 641,
+      "w": 161,
+      "h": 340,
+      "texId": "statua1",
+      "layer": 1,
+      "tile": false
+    },
+    {
+      "id": 8,
+      "type": "sprite",
+      "x": 965,
+      "y": 350,
+      "w": 74,
+      "h": 48,
+      "texId": "frammento",
+      "layer": 1,
+      "tile": false
+    },
+    {
+      "id": 9,
+      "type": "sprite",
+      "x": 1062,
+      "y": 349,
+      "w": 92,
+      "h": 54,
+      "texId": "frammento2",
+      "layer": 1,
+      "tile": false
+    },
+    {
+      "id": 10,
+      "type": "sprite",
+      "x": 700,
+      "y": 745,
+      "w": 108,
+      "h": 280,
+      "texId": "colonna2",
+      "layer": 1,
+      "tile": false
+    },
+    {
+      "id": 11,
+      "type": "sprite",
+      "x": 619,
+      "y": 129,
+      "w": 108,
+      "h": 280,
+      "texId": "colonna2",
+      "layer": 1,
+      "tile": false
+    }
+  ],
+  "groups": {},
+  "textures": {
+    "road": {
+      "name": "road",
+      "w": 256,
+      "h": 128
+    },
+    "cordolo": {
+      "name": "cordolo",
+      "w": 120,
+      "h": 31
+    },
+    "erba": {
+      "name": "erba",
+      "w": 256,
+      "h": 128
+    },
+    "colonna1": {
+      "name": "colonna1",
+      "w": 92,
+      "h": 320
+    },
+    "statua2": {
+      "name": "statua2",
+      "w": 190,
+      "h": 320
+    },
+    "statua1": {
+      "name": "statua1",
+      "w": 161,
+      "h": 340
+    },
+    "frammento": {
+      "name": "frammento",
+      "w": 74,
+      "h": 48
+    },
+    "frammento2": {
+      "name": "frammento2",
+      "w": 92,
+      "h": 54
+    },
+    "colonna2": {
+      "name": "colonna2",
+      "w": 108,
+      "h": 280
+    },
+    "colonna_piccola": {
+      "name": "colonna_piccola",
+      "w": 86,
+      "h": 92
+    }
+  }
+}

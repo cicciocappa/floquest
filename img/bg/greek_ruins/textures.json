@@ -1,0 +1,42 @@
+[
+  {
+    "name": "road",
+    "path": "road.png"
+  },
+  {
+    "name": "cordolo",
+    "path": "cordolo.png"
+  },
+  {
+    "name": "erba",
+    "path": "erba.png"
+  },
+  {
+    "name": "colonna1",
+    "path": "colonna1.png"
+  },
+  {
+    "name": "statua2",
+    "path": "statua2.png"
+  },
+  {
+    "name": "statua1",
+    "path": "statua1.png"
+  },
+  {
+    "name": "frammento",
+    "path": "frammento.png"
+  },
+  {
+    "name": "frammento2",
+    "path": "frammento2.png"
+  },
+  {
+    "name": "colonna2",
+    "path": "colonna2.png"
+  },
+  {
+    "name": "colonna_piccola",
+    "path": "colonna_piccola.png"
+  }
+]

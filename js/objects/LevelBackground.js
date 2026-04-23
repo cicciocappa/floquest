@@ -4,7 +4,7 @@ var FloQuest = FloQuest || {};
  * LevelBackground — loads and renders level layouts from editor JSON.
  *
  * JSON format (from level_editor.html):
- *   { skyHeight, elements: [...], textures: { id: { name, w, h } } }
+ *   { skyHeight, environment, elements: [...], textures: { id: { name, w, h } } }
  *
  * Element types:
  *   rect   — { x, y, w, h, texId, layer, tile:true }
@@ -13,17 +13,28 @@ var FloQuest = FloQuest || {};
  */
 FloQuest.LevelBackground = {
 
+    /** Resolve environment folder name for a level, falling back to journey data. */
+    _resolveEnvironment: function(data, levelNum) {
+        if (data && data.environment) return data.environment;
+        var levels = FloQuest.Levels || [];
+        var lvl = levels[levelNum - 1];
+        return (lvl && lvl.environment) || 'default';
+    },
+
     /** Call from scene.preload(). Loads the level JSON then queues its textures. */
     preload: function(scene, levelNum) {
         var journeyId = FloQuest.ScoreManager.currentJourney || 1;
         var jsonKey = 'level_layout_' + journeyId + '_' + levelNum;
         scene.load.json(jsonKey, 'levels/' + journeyId + '/' + levelNum + '.json');
 
+        var self = this;
         // After JSON loads, queue the texture images it references
         scene.load.once('filecomplete-json-' + jsonKey, function() {
             var data = scene.cache.json.get(jsonKey);
             if (!data || !data.textures) return;
 
+            var env = self._resolveEnvironment(data, levelNum);
+            var basePath = 'img/bg/' + env + '/';
             var loaded = {};
             Object.entries(data.textures).forEach(function(entry) {
                 var texId = entry[0];
@@ -31,12 +42,12 @@ FloQuest.LevelBackground = {
                 var imgKey = 'lvl_' + tex.name;
                 if (!loaded[imgKey]) {
                     if (tex.frameWidth) {
-                        scene.load.spritesheet(imgKey, 'img/bg/' + tex.name + '.png', {
+                        scene.load.spritesheet(imgKey, basePath + tex.name + '.png', {
                             frameWidth: tex.frameWidth,
                             frameHeight: tex.frameHeight
                         });
                     } else {
-                        scene.load.image(imgKey, 'img/bg/' + tex.name + '.png');
+                        scene.load.image(imgKey, basePath + tex.name + '.png');
                     }
                     loaded[imgKey] = true;
                 }

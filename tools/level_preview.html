@@ -64,18 +64,20 @@ var game = new Phaser.Game({
 function preload() {
   var scene = this;
   var texMap = levelData.textures || {};
+  var env = levelData.environment || 'default';
+  var basePath = '../img/bg/' + env + '/';
 
   // Load level textures
   Object.entries(texMap).forEach(function(entry) {
     var tex = entry[1];
     var imgKey = 'lvl_' + tex.name;
     if (tex.frameWidth) {
-      scene.load.spritesheet(imgKey, '../img/bg/' + tex.name + '.png', {
+      scene.load.spritesheet(imgKey, basePath + tex.name + '.png', {
         frameWidth: tex.frameWidth,
         frameHeight: tex.frameHeight
       });
     } else {
-      scene.load.image(imgKey, '../img/bg/' + tex.name + '.png');
+      scene.load.image(imgKey, basePath + tex.name + '.png');
     }
   });
 
