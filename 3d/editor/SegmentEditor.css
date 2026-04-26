@@ -1,0 +1,170 @@
+/* Pannello editor segment. Si sovrappone al canvas 3D a destra.
+   Carico solo in editor mode → l'override su #cam-debug si applica solo lì. */
+
+#cam-debug { display: none !important; }
+
+
+#seg-editor {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 520px;
+  background: rgba(20, 20, 22, 0.96);
+  border-left: 1px solid #333;
+  color: #ddd;
+  font: 12px -apple-system, system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+  user-select: none;
+}
+
+#seg-editor.collapsed {
+  width: 28px;
+}
+#seg-editor.collapsed .body,
+#seg-editor.collapsed footer,
+#seg-editor.collapsed header .title {
+  display: none;
+}
+
+#seg-editor header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: #1a1a1d;
+  border-bottom: 1px solid #333;
+}
+#seg-editor header .title {
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  font-size: 11px;
+  color: #aaa;
+}
+#seg-editor header .close {
+  background: transparent;
+  border: 1px solid #444;
+  color: #aaa;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 0;
+}
+#seg-editor header .close:hover { background: #2a2a2d; }
+
+#seg-editor .body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+#seg-editor .seg-list {
+  flex: 0 0 150px;
+  background: #16161a;
+  border-right: 1px solid #2a2a2e;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+#seg-editor .seg-item {
+  padding: 6px 12px;
+  cursor: pointer;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  color: #bbb;
+  border-left: 3px solid transparent;
+}
+#seg-editor .seg-item:hover { background: #1f1f24; color: #fff; }
+#seg-editor .seg-item.selected {
+  background: #232328;
+  color: #fff;
+  border-left-color: #6da3ea;
+}
+#seg-editor .seg-item.dirty::after {
+  content: '*';
+  margin-left: 4px;
+  color: #ea7a7a;
+  font-weight: bold;
+}
+
+#seg-editor .seg-edit {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+#seg-editor .cm-host {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+#seg-editor .cm-host .CodeMirror {
+  height: 100%;
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+}
+
+#seg-editor .seg-error {
+  flex: 0 0 auto;
+  background: #2a1414;
+  color: #ea9090;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  padding: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.15s, padding 0.15s;
+}
+#seg-editor .seg-error:not(:empty) {
+  padding: 6px 10px;
+  max-height: 80px;
+}
+
+#seg-editor footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: #1a1a1d;
+  border-top: 1px solid #333;
+  flex-wrap: wrap;
+}
+#seg-editor footer label {
+  color: #aaa;
+  font-size: 11px;
+}
+#seg-editor footer select {
+  background: #232328;
+  color: #ddd;
+  border: 1px solid #3a3a3e;
+  border-radius: 3px;
+  padding: 3px 4px;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  flex: 1;
+  min-width: 0;
+}
+#seg-editor footer button {
+  background: #2a2a2e;
+  color: #ddd;
+  border: 1px solid #3a3a3e;
+  padding: 4px 10px;
+  border-radius: 3px;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: inherit;
+}
+#seg-editor footer button:hover { background: #34343a; }
+#seg-editor footer .play { color: #9eea7a; border-color: #3a4a3a; }
+#seg-editor footer .play:hover { background: #2a3a2a; }
+#seg-editor footer .save.dirty { background: #4a3a1a; border-color: #6a5a2a; color: #ffd070; }
+#seg-editor footer .status {
+  flex: 0 0 100%;
+  font-size: 11px;
+  font-family: ui-monospace, monospace;
+  min-height: 14px;
+}

@@ -1,0 +1,56 @@
+{
+  "intro": {
+    "id": "intro",
+    "duration": 800,
+    "tracks": []
+  },
+
+  "walk_to_q1": {
+    "id": "walk_to_q1",
+    "duration": 2500,
+    "tracks": [
+      { "at": 0, "type": "characterAnim", "clip": "walk" },
+      { "at": 0, "type": "characterMove", "to": { "anchor": "anchor_q1" }, "duration": 2500, "ease": "linear" }
+    ],
+    "endState": {
+      "character": { "position": { "anchor": "anchor_q1" }, "anim": "idle" }
+    }
+  },
+
+  "door_drop": {
+    "id": "door_drop",
+    "duration": 2700,
+    "tracks": [
+      { "at": 0, "type": "cameraMove",
+        "pos":    { "anchor": "anchor_door_1", "offset": [4, 2.2, 5] },
+        "lookAt": { "anchor": "anchor_door_1", "offset": [0, 1.0, 0] },
+        "duration": 1200 },
+      { "at": 1200, "type": "propTween", "prop": "door_1", "to": { "posY": -3 }, "duration": 1000 },
+      { "at": 2200, "type": "cameraFollow", "transitionMs": 500 }
+    ],
+    "endState": {
+      "props.door_1": { "posY": -3 },
+      "camera": { "follow": true }
+    }
+  },
+
+  "walk_to_end": {
+    "id": "walk_to_end",
+    "duration": 6000,
+    "tracks": [
+      { "at": 0, "type": "characterAnim", "clip": "walk" },
+      { "at": 0, "type": "characterMove", "to": { "anchor": "anchor_end" }, "duration": 6000, "ease": "linear" }
+    ],
+    "endState": {
+      "character": { "position": { "anchor": "anchor_end" }, "anim": "idle" }
+    }
+  },
+
+  "die": {
+    "id": "die",
+    "duration": 2000,
+    "tracks": [
+      { "at": 0, "type": "characterAnim", "clip": "dying", "loop": false }
+    ]
+  }
+}

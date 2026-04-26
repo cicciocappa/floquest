@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>FloQuest 3D — Engine Demo</title>
+<style>
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+               background: #1a1a1a; font-family: -apple-system, system-ui, sans-serif; color: #eee; }
+  #canvas-host { position: fixed; inset: 0; }
+  #info { position: fixed; top: 12px; left: 12px; font-size: 12px; color: #888;
+          background: rgba(0,0,0,0.5); padding: 6px 10px; border-radius: 6px; z-index: 5; }
+  #result { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 24px; padding: 16px 32px; border-radius: 8px;
+            background: rgba(0,0,0,0.8); display: none; z-index: 100; }
+  #cam-debug { position: fixed; right: 12px; bottom: 12px; width: 260px;
+               background: rgba(0,0,0,0.65); padding: 10px 12px; border-radius: 6px;
+               font-size: 11px; z-index: 10; user-select: none; }
+  #cam-debug h4 { margin: 0 0 8px; font-size: 11px; color: #aaa; font-weight: 600;
+                  text-transform: uppercase; letter-spacing: 0.5px; }
+  #cam-debug .row { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
+  #cam-debug .row label { flex: 0 0 70px; color: #ccc; }
+  #cam-debug .row input[type=range] { flex: 1; min-width: 0; }
+  #cam-debug .row .val { flex: 0 0 46px; text-align: right; color: #9eea7a;
+                         font-family: ui-monospace, monospace; }
+  #cam-debug .row input[type=color] { flex: 1; height: 22px; padding: 0; border: none;
+                                       background: transparent; cursor: pointer; }
+  #cam-debug h4.sub { margin-top: 10px; }
+  #cam-debug button { margin-top: 6px; width: 100%; background: #333; color: #eee;
+                      border: 1px solid #555; padding: 4px; border-radius: 4px;
+                      font-size: 11px; cursor: pointer; }
+  #cam-debug button:hover { background: #444; }
+</style>
+</head>
+<body>
+<div id="canvas-host"></div>
+<div id="info">Engine demo · perspective free-cam · segment-based · <b>spazio</b> = skip animazione</div>
+<div id="result"></div>
+
+<div id="cam-debug">
+  <h4>Camera (debug)</h4>
+  <div class="row"><label>FOV °</label><input id="cd-fov" type="range" min="15" max="80" step="0.5"><span class="val" id="cd-fov-v"></span></div>
+  <div class="row"><label>Cam Y</label><input id="cd-camy" type="range" min="0" max="8" step="0.05"><span class="val" id="cd-camy-v"></span></div>
+  <div class="row"><label>Cam Z</label><input id="cd-camz" type="range" min="2" max="25" step="0.1"><span class="val" id="cd-camz-v"></span></div>
+  <div class="row"><label>Tilt °</label><input id="cd-tilt" type="range" min="-30" max="60" step="0.5"><span class="val" id="cd-tilt-v"></span></div>
+  <h4 class="sub">Look</h4>
+  <div class="row"><label>Ambient</label><input id="cd-ambient" type="range" min="0" max="1" step="0.01"><span class="val" id="cd-ambient-v"></span></div>
+  <div class="row"><label>Tint</label><input id="cd-tint" type="color"><span class="val" id="cd-tint-v"></span></div>
+  <button id="cd-reset">Reset</button>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+import { Director }        from './engine/Director.js';
+import { Character }       from './engine/Character.js';
+import { Prop }            from './engine/Prop.js';
+import { CinematicCamera } from './engine/CinematicCamera.js';
+
+import { FlatMaterial }    from './styling/FlatMaterial.js';
+import { GBufferRenderer } from './styling/GBufferRenderer.js';
+import { HatchPass }       from './styling/HatchPass.js';
+
+import { level1 } from './levels/level1.js';
+
+// ----- camera config (single source of truth) -----------------------------
+// Camera **prospettica** (post-pivot 2026-04-26): movimenti liberi/cinematici
+// previsti via keyframe legati agli eventi del character. Per ora baseline =
+// follow rigido in X come la vecchia ortho, così possiamo validare hatching
+// e gamma prima di toccare la coreografia camera.
+// FOV iniziale 30° (vertical) ≈ 30mm equivalente — tono cinematografico,
+// frustum stretto che riduce distorsione ai bordi e tiene il character a
+// circa 1/3 schermo a distanza ~9m (analogo all'ortho FRUSTUM_H=5).
+// Default: in produzione tornano `const`. Per ora `let` così il pannello
+// debug può modificarli a runtime.
+const CAMERA_DEFAULTS = { fov: 30, camY: 5.1, camZ: 8.0, tiltDeg: 30 };
+let FOV       = CAMERA_DEFAULTS.fov;
+let CAMERA_Y  = CAMERA_DEFAULTS.camY;
+let CAMERA_Z  = CAMERA_DEFAULTS.camZ;
+let TILT_DEG  = CAMERA_DEFAULTS.tiltDeg;
+const lookY = () => CAMERA_Y - CAMERA_Z * Math.tan(TILT_DEG * Math.PI / 180);
+
+// ----- bootstrap renderer -------------------------------------------------
+const host = document.getElementById('canvas-host');
+const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(host.clientWidth, host.clientHeight);
+renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+host.appendChild(renderer.domElement);
+
+if (!renderer.capabilities.isWebGL2) {
+  document.getElementById('info').textContent = 'Errore: WebGL2 richiesto';
+  throw new Error('WebGL2 required');
+}
+
+// ----- scena + camera prospettica -----------------------------------------
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xddeeff);
+
+const camera = new THREE.PerspectiveCamera(
+  FOV, host.clientWidth / host.clientHeight, 0.1, 100
+);
+camera.position.set(0, CAMERA_Y, CAMERA_Z);
+camera.lookAt(0, lookY(), 0);
+
+// La direzionale serve all'HatchPass per ricalcolare N·L in screen-space.
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+dirLight.position.set(3, 5, 4);
+scene.add(dirLight);
+
+// ----- styling pipeline (flat + hatching) ---------------------------------
+const gbuffer = new GBufferRenderer(renderer, host.clientWidth, host.clientHeight);
+const hatchPass = new HatchPass();
+
+const renderFn = (scn, cam) => {
+  gbuffer.render(scn, cam);
+  hatchPass.setInputs(gbuffer);
+  hatchPass.update(scn, cam);
+  hatchPass.render(renderer, null);
+};
+
+// ----- director + level set -----------------------------------------------
+const director = new Director({ scene, camera, renderer, renderFn });
+
+// Carica il GLB del livello (mesh + anchor Empty). I materiali PBR di Blender
+// vengono sostituiti con FlatMaterial preservando base color e map diffuse.
+await director.loadSet('assets/level1.glb', {
+  applyMaterial: mesh => {
+    const orig = mesh.material;
+    const map  = orig && orig.map ? orig.map : null;
+    const baseColor = map
+      ? 0xffffff
+      : (orig && orig.color ? orig.color.getHex() : 0x888888);
+    return new FlatMaterial({ color: baseColor, map });
+  },
+});
+
+// Personaggio (Mixamo, multi-clip).
+const character = await Character.load('assets/character.glb');
+applyFlatMaterial(character.root, 0xb59373);
+director.setCharacter(character);
+
+// Statua come prop animabile (solo se il livello ha un anchor_statua).
+if (director.anchors.anchor_statua) {
+  const statua = await Prop.load('assets/statua.glb');
+  applyFlatMaterial(statua.root, 0xc8c0a8);
+  statua.spawnAt(director.anchors.anchor_statua);
+  director.addProp('statua', statua);
+}
+
+// Porta animabile della prima domanda (drop a terra sulla risposta giusta).
+if (director.anchors.anchor_door_1) {
+  const door1 = await Prop.load('assets/door_1.glb');
+  applyFlatMaterial(door1.root, 0x6b4a2a);
+  door1.spawnAt(director.anchors.anchor_door_1);
+  director.addProp('door_1', door1);
+}
+
+// CinematicCamera: stessa modalità follow di prima come baseline (config
+// passata come funzione → i debug slider funzionano live), ma il livello
+// può chiamare `await camera.moveTo(...)` per qualunque shot cinematico.
+const cameraCtl = new CinematicCamera(camera);
+director.setCameraController(cameraCtl);
+cameraCtl.follow(character.root, () => ({
+  posY: CAMERA_Y, posZ: CAMERA_Z, lookY: lookY(),
+}));
+
+director.start();
+bindCameraDebug();
+
+// Skip animazione corrente via barra spaziatrice. Le domande non sono
+// segment, quindi la skip non scavalca mai un'attesa di input.
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') {
+    e.preventDefault();
+    director.segmentPlayer?.skip();
+  }
+});
+
+// ----- editor mode O run level1 -------------------------------------------
+const isEditor = new URLSearchParams(location.search).get('editor') === '1';
+
+if (isEditor) {
+  // Spawn baseline così la scena non è vuota mentre l'utente edita.
+  if (director.anchors.anchor_player_start) {
+    character.spawnAt(director.anchors.anchor_player_start);
+  }
+  const { setupEditor } = await import('./editor/SegmentEditor.js');
+  await setupEditor({
+    director,
+    segmentsPath: 'levels/level1.segments.json',
+  });
+} else {
+  const result = await director.runLevel(level1);
+  console.log('Level finished →', result);
+  const resultEl = document.getElementById('result');
+  resultEl.textContent = result === 'win' ? '✓ Vittoria' : '✗ Morte';
+  resultEl.style.display = 'block';
+  resultEl.style.color = result === 'win' ? '#9eea7a' : '#ea7a7a';
+}
+
+// ----- helpers -------------------------------------------------------------
+function applyFlatMaterial(root, fallbackColor) {
+  // Sostituisce qualunque materiale PBR con FlatMaterial, eredita la map se
+  // presente (così le texture diffuse Mixamo continuano a funzionare).
+  root.traverse(obj => {
+    if (!obj.isMesh) return;
+    const origMap = obj.material && obj.material.map;
+    obj.material = new FlatMaterial({
+      color: origMap ? 0xffffff : fallbackColor,
+      map: origMap || null,
+    });
+  });
+}
+
+window.addEventListener('resize', () => {
+  const w = host.clientWidth, h = host.clientHeight;
+  renderer.setSize(w, h);
+  applyProjection();
+  gbuffer.setSize(w, h);
+});
+
+function applyProjection() {
+  camera.fov = FOV;
+  camera.aspect = host.clientWidth / host.clientHeight;
+  camera.updateProjectionMatrix();
+}
+
+// ----- debug panel (temporaneo) -------------------------------------------
+function bindCameraDebug() {
+  const LOOK_DEFAULTS = { ambient: 0.15, tint: '#ffffff' };
+  const u = () => hatchPass.material.uniforms;
+  const hexToColor = h => new THREE.Color().setHex(parseInt(h.slice(1), 16));
+  const colorToHex = c => '#' + c.getHexString();
+
+  const fields = [
+    { id: 'fov',     get: () => FOV,                 set: v => { FOV = v; applyProjection(); },    fmt: v => v.toFixed(1) + '°' },
+    { id: 'camy',    get: () => CAMERA_Y,            set: v => { CAMERA_Y = v; },                  fmt: v => v.toFixed(2) },
+    { id: 'camz',    get: () => CAMERA_Z,            set: v => { CAMERA_Z = v; },                  fmt: v => v.toFixed(2) },
+    { id: 'tilt',    get: () => TILT_DEG,            set: v => { TILT_DEG = v; },                  fmt: v => v.toFixed(1) + '°' },
+    { id: 'ambient', get: () => u().uAmbient.value,  set: v => { u().uAmbient.value = v; },        fmt: v => v.toFixed(2) },
+  ];
+  for (const f of fields) {
+    const input = document.getElementById('cd-' + f.id);
+    const label = document.getElementById('cd-' + f.id + '-v');
+    const refresh = () => { input.value = f.get(); label.textContent = f.fmt(f.get()); };
+    input.addEventListener('input', () => { f.set(parseFloat(input.value)); label.textContent = f.fmt(f.get()); });
+    f.refresh = refresh;
+    refresh();
+  }
+
+  // Color picker per uSceneTint (gestito separatamente: input type=color).
+  const tintInput = document.getElementById('cd-tint');
+  const tintLabel = document.getElementById('cd-tint-v');
+  const refreshTint = () => {
+    const hex = colorToHex(u().uSceneTint.value);
+    tintInput.value = hex;
+    tintLabel.textContent = hex;
+  };
+  tintInput.addEventListener('input', () => {
+    u().uSceneTint.value.copy(hexToColor(tintInput.value));
+    tintLabel.textContent = tintInput.value;
+  });
+  refreshTint();
+
+  document.getElementById('cd-reset').addEventListener('click', () => {
+    FOV       = CAMERA_DEFAULTS.fov;
+    CAMERA_Y  = CAMERA_DEFAULTS.camY;
+    CAMERA_Z  = CAMERA_DEFAULTS.camZ;
+    TILT_DEG  = CAMERA_DEFAULTS.tiltDeg;
+    u().uAmbient.value = LOOK_DEFAULTS.ambient;
+    u().uSceneTint.value.copy(hexToColor(LOOK_DEFAULTS.tint));
+    applyProjection();
+    fields.forEach(f => f.refresh());
+    refreshTint();
+  });
+}
+</script>
+</body>
+</html>

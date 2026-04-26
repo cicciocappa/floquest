@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Small Objects NPR: Toon + SSAO</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #222; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
+        import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+        import GUI from 'three/addons/libs/lil-gui.module.min.js';
+
+        // 1. SETUP BASE
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xddeeff);
+        
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 10, 15);
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0, 0);
+
+        // 2. ILLUMINAZIONE (Configurata per il Toon Shading)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+        
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+
+        // 3. GENERAZIONE DI MOLTI OGGETTI PICCOLI
+        const floorMaterial = new THREE.MeshToonMaterial({ color: 0xaaaaaa });
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+
+        // Palette di colori pastello per maggiore chiarezza
+        const colors = [0xff9999, 0x99ff99, 0x9999ff, 0xffff99, 0xff99ff];
+        const geometries = [
+            new THREE.BoxGeometry(0.5, 0.5, 0.5),
+            new THREE.CylinderGeometry(0.2, 0.2, 0.8, 16),
+            new THREE.SphereGeometry(0.3, 16, 16)
+        ];
+
+        const group = new THREE.Group();
+        scene.add(group);
+
+        for (let i = 0; i < 300; i++) {
+            const geo = geometries[Math.floor(Math.random() * geometries.length)];
+            const mat = new THREE.MeshToonMaterial({ 
+                color: colors[Math.floor(Math.random() * colors.length)]
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            
+            // Posizionamento casuale
+            mesh.position.x = (Math.random() - 0.5) * 20;
+            mesh.position.z = (Math.random() - 0.5) * 20;
+            mesh.position.y = 0.25 + Math.random() * 0.5; // Leggermente sollevati o appoggiati
+            
+            mesh.rotation.x = Math.random() * Math.PI;
+            mesh.rotation.y = Math.random() * Math.PI;
+
+            group.add(mesh);
+        }
+
+        // 4. POST-PROCESSING: SSAO (L'inchiostro magico)
+        const composer = new EffectComposer(renderer);
+        
+        const renderPass = new RenderPass(scene, camera);
+        composer.addPass(renderPass);
+
+        // Configurazione SSAO spinta per un look da "fumetto"
+        const ssaoPass = new SSAOPass(scene, camera, window.innerWidth, window.innerHeight);
+        ssaoPass.kernelRadius = 1.5; // Raggio dell'ombra
+        ssaoPass.minDistance = 0.001;
+        ssaoPass.maxDistance = 0.1;
+        composer.addPass(ssaoPass);
+
+        const outputPass = new OutputPass();
+        composer.addPass(outputPass);
+
+        // 5. GUI PER TESTARE L'EFFETTO
+        const gui = new GUI();
+        gui.add(ssaoPass, 'enabled').name('Attiva SSAO');
+        gui.add(ssaoPass, 'kernelRadius', 0.1, 5, 0.1).name('Raggio Ombra');
+        gui.add(ssaoPass, 'minDistance', 0.0001, 0.01).name('Distanza Min');
+        gui.add(ssaoPass, 'maxDistance', 0.01, 0.3).name('Distanza Max');
+
+        // 6. LOOP ANIMAZIONE
+        function animate() {
+            requestAnimationFrame(animate);
+            group.rotation.y += 0.001; // Ruota lentamente tutta la scena
+            controls.update();
+            composer.render();
+        }
+
+        window.addEventListener('resize', () => {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+            composer.setSize(w, h);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

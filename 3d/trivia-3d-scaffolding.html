@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Trivia 3D — Stylized Scaffolding v2</title>
+<style>
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #1a1a1a; font-family: -apple-system, system-ui, sans-serif; color: #eee; }
+  #canvas-host { position: fixed; inset: 0; }
+  #panel {
+    position: fixed; top: 12px; right: 12px;
+    background: rgba(20,20,25,0.92); border: 1px solid #333;
+    padding: 14px 16px; border-radius: 8px; font-size: 13px;
+    min-width: 240px; backdrop-filter: blur(6px);
+    z-index: 10;
+  }
+  #panel h3 { margin: 0 0 10px; font-size: 12px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: 0.08em; }
+  #panel .group { margin-bottom: 14px; }
+  #panel label { display: block; margin-bottom: 4px; color: #999; font-size: 11px; }
+  #panel select, #panel input[type=range] { width: 100%; margin-bottom: 2px; box-sizing: border-box; }
+  #panel select { background: #2a2a2a; color: #eee; border: 1px solid #444; padding: 4px 6px; border-radius: 4px; font-size: 12px; }
+  #panel .toggle { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; cursor: pointer; color: #ccc; }
+  #panel .value { color: #ccc; float: right; font-variant-numeric: tabular-nums; }
+  #info { position: fixed; bottom: 12px; left: 12px; font-size: 11px; color: #666; max-width: 60%; }
+  #error { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #400; padding: 20px; border-radius: 8px; display: none; }
+</style>
+</head>
+<body>
+<div id="canvas-host"></div>
+
+<div id="panel">
+  <h3>Stile</h3>
+  <div class="group">
+    <label>Materiale</label>
+    <select id="mat-preset">
+      <option value="cel">Cel shading</option>
+      <option value="ramp">Ramp (acquerello sfumato)</option>
+      <option value="flat">Flat (colore puro)</option>
+      <option value="matcap-clay">Matcap — Clay</option>
+      <option value="matcap-gold">Matcap — Gold</option>
+      <option value="base">Base (Lambert)</option>
+    </select>
+  </div>
+  <div class="group">
+    <label>Post effect</label>
+    <select id="post-preset">
+      <option value="outline">Sobel outline</option>
+      <option value="watercolor">Carta + outline seppia</option>
+      <option value="hatch">Tratteggio (engraving)</option>
+      <option value="kuwahara">Kuwahara (acquerello, pesante)</option>
+      <option value="none">Nessuno</option>
+    </select>
+  </div>
+  <div class="group">
+    <label class="toggle"><input type="checkbox" id="rotate" checked> Rotazione camera</label>
+  </div>
+  <div class="group" id="outline-controls">
+    <label>Spessore outline <span class="value" id="thick-val">0.5</span></label>
+    <input type="range" id="thick" min="0" max="3" step="0.1" value="0.5">
+    <label>Soglia edge <span class="value" id="thr-val">1.00</span></label>
+    <input type="range" id="thr" min="0.05" max="1" step="0.05" value="1.0">
+  </div>
+  <div class="group" id="kuwahara-controls" style="display:none">
+    <label>Kernel size <span class="value" id="ks-val">8</span></label>
+    <input type="range" id="ks" min="2" max="20" step="1" value="8">
+    <label>Hardness <span class="value" id="hd-val">8.0</span></label>
+    <input type="range" id="hd" min="1" max="32" step="0.5" value="8">
+    <label>Sharpness <span class="value" id="sh-val">8.0</span></label>
+    <input type="range" id="sh" min="1" max="32" step="0.5" value="8">
+  </div>
+  <div class="group" id="watercolor-controls" style="display:none">
+    <label>Paper scale <span class="value" id="psc-val">2.5</span></label>
+    <input type="range" id="psc" min="0.2" max="8" step="0.1" value="2.5">
+    <label>Paper intensità <span class="value" id="pst-val">0.35</span></label>
+    <input type="range" id="pst" min="0" max="1.5" step="0.05" value="0.35">
+  </div>
+  <div class="group" id="hatch-controls" style="display:none">
+    <label>Scala tratti <span class="value" id="hsc-val">7.0</span></label>
+    <input type="range" id="hsc" min="3" max="20" step="0.5" value="7">
+    <label>Intensità tratti <span class="value" id="hst-val">0.85</span></label>
+    <input type="range" id="hst" min="0" max="1" step="0.05" value="0.85">
+    <label>Soglia luce <span class="value" id="hlc-val">0.20</span></label>
+    <input type="range" id="hlc" min="0" max="0.5" step="0.02" value="0.20">
+    <label>Carta intensità <span class="value" id="hpst-val">0.35</span></label>
+    <input type="range" id="hpst" min="0" max="1.5" step="0.05" value="0.35">
+    <label>Carta scala <span class="value" id="hpsc-val">2.5</span></label>
+    <input type="range" id="hpsc" min="0.2" max="8" step="0.1" value="2.5">
+  </div>
+</div>
+
+<div id="info">Scaffolding trivia 3D • WebGL2 + MRT • clicca e trascina per orbitare manualmente</div>
+<div id="error"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<!--
+  ARCHITETTURA
+  ============
+  In un progetto reale questo file si spezza così:
+    src/
+      Game.js              — loop di gioco, scena, camera, input
+      materials/
+        StylizedMaterial.js — base class con scrittura G-buffer
+        CelMaterial.js
+        MatcapMaterial.js
+        BaseMaterial.js
+      post/
+        GBufferPass.js     — render pass con MRT per depth + normali
+        OutlinePass.js     — Sobel outline
+        PostPipeline.js    — gestione catena post
+      StyleManager.js      — orchestrazione materiali + post
+      main.js              — bootstrap + UI
+  Qui sotto sono tutti nello stesso modulo per comodità,
+  ma separati da commenti === MODULO: NomeFile === e senza dipendenze incrociate non necessarie.
+-->
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ============================================================================
+// === MODULO: materials/StylizedMaterial.js ==================================
+// ============================================================================
+// Base class per tutti i materiali stilizzati.
+// Caratteristica chiave: scrivono in 3 render target simultaneamente via MRT.
+//   location 0 = colore finale (post-shading)
+//   location 1 = normale view-space, codificata in [0,1]
+//   location 2 = depth lineare, codificato in R
+// Tutti i materiali derivati condividono la stessa struttura di output,
+// quindi i post-effect screen-space funzionano identici su qualsiasi materiale.
+
+class StylizedMaterial extends THREE.ShaderMaterial {
+  constructor({ vertexShader, fragmentShader, uniforms = {}, defines = {} }) {
+    super({
+      vertexShader,
+      fragmentShader,
+      uniforms: THREE.UniformsUtils.merge([
+        THREE.UniformsLib.lights,  // ci permette di accedere alle luci della scena
+        uniforms
+      ]),
+      defines: { USE_MRT: '', ...defines },
+      lights: true,
+      glslVersion: THREE.GLSL3  // WebGL2
+    });
+  }
+}
+
+// Shader chunks condivisi fra tutti i materiali stilizzati.
+// Lo skinning è gestito tramite i chunk standard di Three.js: sono no-op
+// finché il renderer non rileva una SkinnedMesh, momento in cui USE_SKINNING
+// viene #define-ito automaticamente e i chunk attivano la deformazione.
+const SHARED_VERTEX = /* glsl */`
+  #include <skinning_pars_vertex>
+
+  out vec3 vNormalV;
+  out vec3 vPosV;
+  out vec2 vUv;
+
+  void main() {
+    vec3 transformed = position;
+    vec3 objectNormal = normal;
+
+    #include <skinbase_vertex>
+    #include <skinnormal_vertex>
+    #include <skinning_vertex>
+
+    vec4 posV = viewMatrix * modelMatrix * vec4(transformed, 1.0);
+    vPosV = posV.xyz;
+    vNormalV = normalize(normalMatrix * objectNormal);
+    vUv = uv;
+    gl_Position = projectionMatrix * posV;
+  }
+`;
+
+// Output comune: ogni frag shader concreto deve definire `vec3 shade()`,
+// poi il main scrive sempre sui 3 location.
+const SHARED_FRAG_OUTPUTS = /* glsl */`
+  layout(location = 0) out vec4 outColor;
+  layout(location = 1) out vec4 outNormal;
+  layout(location = 2) out vec4 outDepth;
+
+  in vec3 vNormalV;
+  in vec3 vPosV;
+  in vec2 vUv;
+
+  void writeGBuffer(vec3 color) {
+    outColor  = vec4(color, 1.0);
+    outNormal = vec4(normalize(vNormalV) * 0.5 + 0.5, 1.0);
+    outDepth  = vec4(clamp(-vPosV.z / 40.0, 0.0, 1.0), 0.0, 0.0, 1.0);
+  }
+`;
+
+// ============================================================================
+// === MODULO: materials/CelMaterial.js =======================================
+// ============================================================================
+// Cel shading con 3 toni + specular step. La luce è presa dal primo
+// DirectionalLight della scena (via uniform automatica di THREE).
+
+class CelMaterial extends StylizedMaterial {
+  constructor({
+    color = 0xcc6633,
+    steps = 3,
+    map = null,
+    specStrength = 0.15,   // intensità highlight, 0 = nessuno
+    specThreshold = 0.92,  // più alto = highlight più piccolo
+    specPower = 96.0       // più alto = highlight più stretto
+  } = {}) {
+    const uniforms = {
+      uBaseColor: { value: new THREE.Color(color) },
+      uSteps: { value: steps },
+      uSpecStrength: { value: specStrength },
+      uSpecThreshold: { value: specThreshold },
+      uSpecPower: { value: specPower }
+    };
+    const defines = {};
+    if (map) {
+      uniforms.uColorMap = { value: map };
+      defines.USE_COLORMAP = '';
+    }
+    super({
+      vertexShader: SHARED_VERTEX,
+      fragmentShader: /* glsl */`
+        precision highp float;
+        ${SHARED_FRAG_OUTPUTS}
+
+        uniform vec3 uBaseColor;
+        uniform float uSteps;
+        uniform float uSpecStrength;
+        uniform float uSpecThreshold;
+        uniform float uSpecPower;
+        #ifdef USE_COLORMAP
+          uniform sampler2D uColorMap;
+        #endif
+
+        // THREE ci dà le luci direzionali via uniform block
+        struct DirectionalLight { vec3 direction; vec3 color; };
+        uniform DirectionalLight directionalLights[ NUM_DIR_LIGHTS ];
+
+        vec3 shade() {
+          vec3 N = normalize(vNormalV);
+          // direzione della prima DirectionalLight, già in view space
+          vec3 L = normalize(directionalLights[0].direction);
+          float ndl = max(dot(N, L), 0.0);
+
+          // cel step
+          float lit = floor(ndl * uSteps) / uSteps;
+          lit = max(lit, 0.25);  // ambient floor
+
+          // base color: texture diffuse se presente, altrimenti tinta uniforme.
+          #ifdef USE_COLORMAP
+            vec3 base = texture(uColorMap, vUv).rgb * uBaseColor;
+          #else
+            vec3 base = uBaseColor;
+          #endif
+
+          // specular step (toon highlight) — tinto col base color per evitare
+          // macchie bianche piatte su volti / superfici scure
+          vec3 V = normalize(-vPosV);
+          vec3 H = normalize(L + V);
+          float spec = pow(max(dot(N, H), 0.0), uSpecPower);
+          float specStep = step(uSpecThreshold, spec);
+
+          return base * lit + base * specStep * uSpecStrength;
+        }
+
+        void main() { writeGBuffer(shade()); }
+      `,
+      uniforms,
+      defines
+    });
+  }
+
+  setColor(hex) { this.uniforms.uBaseColor.value.setHex(hex); }
+}
+
+// ============================================================================
+// === MODULO: materials/MatcapMaterial.js ====================================
+// ============================================================================
+// Matcap shading: la normale view-space .xy è l'UV per una texture sferica.
+// Zero dipendenza da luci: lo shading è "cotto" nella matcap texture.
+
+class StylizedMatcapMaterial extends StylizedMaterial {
+  constructor({ matcapTexture, tintColor = 0xffffff, tintAmount = 0 } = {}) {
+    super({
+      vertexShader: SHARED_VERTEX,
+      fragmentShader: /* glsl */`
+        precision highp float;
+        ${SHARED_FRAG_OUTPUTS}
+
+        uniform sampler2D uMatcap;
+        uniform vec3 uTint;
+        uniform float uTintAmount;
+
+        vec3 shade() {
+          vec3 N = normalize(vNormalV);
+          vec2 uv = N.xy * 0.5 + 0.5;
+          vec3 matcap = texture(uMatcap, uv).rgb;
+          return mix(matcap, matcap * uTint, uTintAmount);
+        }
+
+        void main() { writeGBuffer(shade()); }
+      `,
+      uniforms: {
+        uMatcap: { value: matcapTexture },
+        uTint: { value: new THREE.Color(tintColor) },
+        uTintAmount: { value: tintAmount }
+      }
+    });
+  }
+}
+
+// ============================================================================
+// === MODULO: materials/BaseMaterial.js ======================================
+// ============================================================================
+// Lambert semplice, utile come "ground truth" per confrontare gli stili.
+
+class BaseStylizedMaterial extends StylizedMaterial {
+  constructor({ color = 0xcc6633, map = null } = {}) {
+    const uniforms = { uBaseColor: { value: new THREE.Color(color) } };
+    const defines = {};
+    if (map) {
+      uniforms.uColorMap = { value: map };
+      defines.USE_COLORMAP = '';
+    }
+    super({
+      vertexShader: SHARED_VERTEX,
+      fragmentShader: /* glsl */`
+        precision highp float;
+        ${SHARED_FRAG_OUTPUTS}
+
+        uniform vec3 uBaseColor;
+        #ifdef USE_COLORMAP
+          uniform sampler2D uColorMap;
+        #endif
+        struct DirectionalLight { vec3 direction; vec3 color; };
+        uniform DirectionalLight directionalLights[ NUM_DIR_LIGHTS ];
+
+        vec3 shade() {
+          vec3 N = normalize(vNormalV);
+          vec3 L = normalize(directionalLights[0].direction);
+          float ndl = max(dot(N, L), 0.0);
+          #ifdef USE_COLORMAP
+            vec3 base = texture(uColorMap, vUv).rgb * uBaseColor;
+          #else
+            vec3 base = uBaseColor;
+          #endif
+          return base * (ndl * 0.85 + 0.15);
+        }
+
+        void main() { writeGBuffer(shade()); }
+      `,
+      uniforms,
+      defines
+    });
+  }
+}
+
+// ============================================================================
+// === MODULO: materials/FlatMaterial.js ======================================
+// ============================================================================
+// Colore puro, nessuna interazione con la luce. Pensato per essere accoppiato
+// a un post-pass che si occupa lui dello shading (hatching, halftone, ecc.).
+// Le normali e la depth vengono comunque scritte nel G-buffer, così il
+// post-pass può ricalcolare l'illuminazione a posteriori.
+
+class FlatMaterial extends StylizedMaterial {
+  constructor({ color = 0xcc6633, map = null } = {}) {
+    const uniforms = { uBaseColor: { value: new THREE.Color(color) } };
+    const defines = {};
+    if (map) {
+      uniforms.uColorMap = { value: map };
+      defines.USE_COLORMAP = '';
+    }
+    super({
+      vertexShader: SHARED_VERTEX,
+      fragmentShader: /* glsl */`
+        precision highp float;
+        ${SHARED_FRAG_OUTPUTS}
+
+        uniform vec3 uBaseColor;
+        #ifdef USE_COLORMAP
+          uniform sampler2D uColorMap;
+        #endif
+
+        vec3 shade() {
+          #ifdef USE_COLORMAP
+            return texture(uColorMap, vUv).rgb * uBaseColor;
+          #else
+            return uBaseColor;
+          #endif
+        }
+
+        void main() { writeGBuffer(shade()); }
+      `,
+      uniforms,
+      defines
+    });
+  }
+}
+
+// ============================================================================
+// === MODULO: materials/RampMaterial.js ======================================
+// ============================================================================
+// Cel sfumato con rampa 1D. Sostituisce il `floor()` quantizzato con una
+// lookup texture: la curva di luce può essere arbitraria (sfumata, "sporca",
+// con tinta caldo-freddo), molto più "watercolor" del cel netto.
+
+class RampMaterial extends StylizedMaterial {
+  constructor({ color = 0xffffff, map = null, ramp } = {}) {
+    const uniforms = {
+      uBaseColor: { value: new THREE.Color(color) },
+      uRamp:      { value: ramp }
+    };
+    const defines = {};
+    if (map) {
+      uniforms.uColorMap = { value: map };
+      defines.USE_COLORMAP = '';
+    }
+    super({
+      vertexShader: SHARED_VERTEX,
+      fragmentShader: /* glsl */`
+        precision highp float;
+        ${SHARED_FRAG_OUTPUTS}
+
+        uniform vec3 uBaseColor;
+        uniform sampler2D uRamp;
+        #ifdef USE_COLORMAP
+          uniform sampler2D uColorMap;
+        #endif
+        struct DirectionalLight { vec3 direction; vec3 color; };
+        uniform DirectionalLight directionalLights[ NUM_DIR_LIGHTS ];
+
+        vec3 shade() {
+          vec3 N = normalize(vNormalV);
+          vec3 L = normalize(directionalLights[0].direction);
+          float ndl = max(dot(N, L), 0.0);
+          vec3 ramp = texture(uRamp, vec2(ndl, 0.5)).rgb;
+          #ifdef USE_COLORMAP
+            vec3 base = texture(uColorMap, vUv).rgb * uBaseColor;
+          #else
+            vec3 base = uBaseColor;
+          #endif
+          return base * ramp;
+        }
+
+        void main() { writeGBuffer(shade()); }
+      `,
+      uniforms,
+      defines
+    });
+  }
+}
+
+// ============================================================================
+// === Utility: generazione procedurale matcap texture ========================
+// ============================================================================
+
+function buildMatcapTexture(recipe, size = 256) {
+  const data = new Uint8Array(size * size * 4);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const nx = (x / (size - 1)) * 2 - 1;
+      const ny = (y / (size - 1)) * 2 - 1;
+      const r2 = nx*nx + ny*ny;
+      const i = (y * size + x) * 4;
+      if (r2 > 1) {
+        data[i] = 20; data[i+1] = 20; data[i+2] = 25; data[i+3] = 255;
+        continue;
+      }
+      const nz = Math.sqrt(1 - r2);
+      const [r, g, b] = recipe(nx, ny, nz);
+      data[i]   = Math.min(255, Math.max(0, r * 255));
+      data[i+1] = Math.min(255, Math.max(0, g * 255));
+      data[i+2] = Math.min(255, Math.max(0, b * 255));
+      data[i+3] = 255;
+    }
+  }
+  const tex = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+// Rampa 1D per RampMaterial: sostituisce il `floor()` cel con un gradiente
+// sfumato con leggera tinta caldo-freddo (gooch tenue, stile acquerello).
+function buildRampTexture(size = 256) {
+  const data = new Uint8Array(size * 4);
+  for (let i = 0; i < size; i++) {
+    const t = i / (size - 1);
+    // toe morbido, poi salita: sembra inchiostro che si dirada
+    const lit = Math.pow(t, 0.55);
+    // warm light (giallo paglierino) → cool shadow (lavanda) molto desat.
+    const warm = [1.00, 0.96, 0.86];
+    const cool = [0.62, 0.66, 0.78];
+    const r = warm[0] * lit + cool[0] * (1 - lit) * 0.55;
+    const g = warm[1] * lit + cool[1] * (1 - lit) * 0.55;
+    const b = warm[2] * lit + cool[2] * (1 - lit) * 0.55;
+    // piccola ondulazione nella rampa per "stain" da pigmento
+    const stain = 1 + 0.06 * Math.sin(t * Math.PI * 3.0);
+    data[i*4]   = Math.min(255, r * 255 * stain);
+    data[i*4+1] = Math.min(255, g * 255 * stain);
+    data[i*4+2] = Math.min(255, b * 255 * stain);
+    data[i*4+3] = 255;
+  }
+  const tex = new THREE.DataTexture(data, size, 1, THREE.RGBAFormat);
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+// Texture carta procedurale: noise multi-ottava + grana fine. Tileabile.
+// Usata in screen-space come overlay moltiplicativo (1 sample per pixel).
+function buildPaperTexture(size = 512) {
+  const data = new Uint8Array(size * size * 4);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      let n = 0.85;
+      n += Math.sin(x * 0.05 + y * 0.07) * 0.04;
+      n += Math.sin(x * 0.13 - y * 0.21) * 0.03;
+      n += Math.sin(x * 0.31 + y * 0.43) * 0.02;
+      n += (Math.random() - 0.5) * 0.06;  // grana
+      const v = Math.max(180, Math.min(255, n * 255));
+      const i = (y * size + x) * 4;
+      data[i] = data[i+1] = data[i+2] = v;
+      data[i+3] = 255;
+    }
+  }
+  const tex = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+const MATCAP_RECIPES = {
+  clay: (nx, ny, nz) => {
+    const L = [0.3, 0.5, 0.81];
+    const nl = Math.max(0, nx*L[0] + ny*L[1] + nz*L[2]);
+    const v = 0.25 + nl * 0.55;
+    const rim = Math.pow(1 - nz, 3) * 0.3;
+    return [v + rim*0.4, v + rim*0.35, v + rim*0.3];
+  },
+  gold: (nx, ny, nz) => {
+    const ambient = ny > 0 ? 0.7 + ny * 0.25 : 0.2 + (ny + 1) * 0.15;
+    const L = [0.3, 0.6, 0.74];
+    const nl = Math.max(0, nx*L[0] + ny*L[1] + nz*L[2]);
+    const spec = Math.pow(nl, 48) * 1.8;
+    return [ambient * 1.15 + spec, ambient * 0.85 + spec, ambient * 0.35 + spec * 0.8];
+  }
+};
+
+// ============================================================================
+// === MODULO: post/GBufferRenderer.js ========================================
+// ============================================================================
+// Configura un WebGLRenderTarget multi-texture per MRT.
+// È la piece che rende l'intera pipeline possibile: rendering singolo pass
+// con 3 output simultanei, senza dover re-renderizzare la scena per ogni
+// pass di post-processing.
+
+class GBufferRenderer {
+  constructor(renderer, width, height) {
+    this.renderer = renderer;
+    // r160: l'opzione `count` su WebGLRenderTarget è arrivata solo in r163.
+    // Qui usiamo WebGLMultipleRenderTargets, l'API MRT nativa di r160.
+    // L'array di texture è esposto come `.texture` (non `.textures`).
+    this.target = new THREE.WebGLMultipleRenderTargets(width, height, 3, {
+      minFilter: THREE.NearestFilter,
+      magFilter: THREE.NearestFilter,
+      type: THREE.UnsignedByteType,
+      depthBuffer: true,
+      stencilBuffer: false
+    });
+    this.target.texture[0].name = 'color';
+    this.target.texture[1].name = 'normal';
+    this.target.texture[2].name = 'depth';
+  }
+
+  render(scene, camera) {
+    this.renderer.setRenderTarget(this.target);
+    this.renderer.render(scene, camera);
+    this.renderer.setRenderTarget(null);
+  }
+
+  setSize(w, h) { this.target.setSize(w, h); }
+  get color()  { return this.target.texture[0]; }
+  get normal() { return this.target.texture[1]; }
+  get depth()  { return this.target.texture[2]; }
+}
+
+// ============================================================================
+// === MODULO: post/PostEffect.js =============================================
+// ============================================================================
+// Base class per un post-effect. Riceve il G-buffer in ingresso e renderizza
+// su uno specifico target (o sullo schermo).
+
+class PostEffect {
+  constructor(shaderConfig) {
+    this.enabled = true;
+    this.material = new THREE.ShaderMaterial({
+      ...shaderConfig,
+      glslVersion: THREE.GLSL3
+    });
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    // fullscreen triangle (più efficiente del quad)
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([-1,-1,0, 3,-1,0, -1,3,0]), 3));
+    this.mesh = new THREE.Mesh(geo, this.material);
+    this.mesh.frustumCulled = false;
+    this.scene.add(this.mesh);
+  }
+
+  setInputs(gbuffer) {
+    // override nelle sottoclassi
+  }
+
+  setParam(name, value) {
+    if (this.material.uniforms[name]) {
+      this.material.uniforms[name].value = value;
+    }
+  }
+
+  render(renderer, outputTarget = null) {
+    renderer.setRenderTarget(outputTarget);
+    renderer.render(this.scene, this.camera);
+  }
+}
+
+// ============================================================================
+// === MODULO: post/OutlinePass.js ============================================
+// ============================================================================
+// Sobel su normal+depth buffer. Scurisce il colore dove trova un edge.
+
+class OutlinePass extends PostEffect {
+  constructor() {
+    super({
+      uniforms: {
+        uColor: { value: null },
+        uNormal: { value: null },
+        uDepth: { value: null },
+        uTexel: { value: new THREE.Vector2() },
+        uThickness: { value: 0.5 },
+        uThreshold: { value: 1.0 }
+      },
+      vertexShader: /* glsl */`
+        out vec2 vUv;
+        void main() {
+          vUv = position.xy * 0.5 + 0.5;
+          gl_Position = vec4(position.xy, 0.0, 1.0);
+        }
+      `,
+      fragmentShader: /* glsl */`
+        precision highp float;
+        in vec2 vUv;
+        uniform sampler2D uColor, uNormal, uDepth;
+        uniform vec2 uTexel;
+        uniform float uThickness, uThreshold;
+        out vec4 outColor;
+
+        float sobel(sampler2D tex, vec2 uv, float off) {
+          vec3 tl = texture(tex, uv + vec2(-1,-1)*uTexel*off).rgb;
+          vec3 tm = texture(tex, uv + vec2( 0,-1)*uTexel*off).rgb;
+          vec3 tr = texture(tex, uv + vec2( 1,-1)*uTexel*off).rgb;
+          vec3 ml = texture(tex, uv + vec2(-1, 0)*uTexel*off).rgb;
+          vec3 mr = texture(tex, uv + vec2( 1, 0)*uTexel*off).rgb;
+          vec3 bl = texture(tex, uv + vec2(-1, 1)*uTexel*off).rgb;
+          vec3 bm = texture(tex, uv + vec2( 0, 1)*uTexel*off).rgb;
+          vec3 br = texture(tex, uv + vec2( 1, 1)*uTexel*off).rgb;
+          vec3 gx = -tl - 2.0*ml - bl + tr + 2.0*mr + br;
+          vec3 gy = -tl - 2.0*tm - tr + bl + 2.0*bm + br;
+          return length(gx) + length(gy);
+        }
+
+        void main() {
+          vec3 color = texture(uColor, vUv).rgb;
+          if (uThickness > 0.0) {
+            float eN = sobel(uNormal, vUv, uThickness);
+            float eD = sobel(uDepth,  vUv, uThickness) * 6.0;
+            float e = max(eN, eD);
+            float line = smoothstep(uThreshold, uThreshold + 0.1, e);
+            color = mix(color, color * 0.15, line);
+          }
+          outColor = vec4(color, 1.0);
+        }
+      `
+    });
+  }
+
+  setInputs(gbuffer) {
+    this.material.uniforms.uColor.value  = gbuffer.color;
+    this.material.uniforms.uNormal.value = gbuffer.normal;
+    this.material.uniforms.uDepth.value  = gbuffer.depth;
+    const w = gbuffer.target.width, h = gbuffer.target.height;
+    this.material.uniforms.uTexel.value.set(1/w, 1/h);
+  }
+}
+
+// ============================================================================
+// === MODULO: post/PassthroughPass.js ========================================
+// ============================================================================
+// Copia il color buffer sullo schermo senza modifiche.
+// Serve quando l'utente disabilita tutti i post-effect.
+
+class PassthroughPass extends PostEffect {
+  constructor() {
+    super({
+      uniforms: { uColor: { value: null } },
+      vertexShader: /* glsl */`
+        out vec2 vUv;
+        void main() { vUv = position.xy * 0.5 + 0.5; gl_Position = vec4(position.xy, 0.0, 1.0); }
+      `,
+      fragmentShader: /* glsl */`
+        precision highp float;
+        in vec2 vUv;
+        uniform sampler2D uColor;
+        out vec4 outColor;
+        void main() { outColor = texture(uColor, vUv); }
+      `
+    });
+  }
+
+  setInputs(gbuffer) {
+    this.material.uniforms.uColor.value = gbuffer.color;
+  }
+}
+
+// ============================================================================
+// === MODULO: post/WatercolorPass.js =========================================
+// ============================================================================
+// Single-pass economico: Sobel outline + paper overlay screen-space.
+// Costo: come OutlinePass + 1 sample texture. ~free su qualsiasi GPU.
+
+// Carica una sola volta la texture carta dal disco. Tiled in screen-space.
+// Se il file non c'è (404) Three.js logga ma non crasha: il sample restituisce
+// 0 → leggero scurimento globale finché non sostituisci con un file valido.
+const PAPER_TEXTURE = new THREE.TextureLoader().load('assets/ivory-off-white-paper-texture.jpg');
+PAPER_TEXTURE.wrapS = THREE.RepeatWrapping;
+PAPER_TEXTURE.wrapT = THREE.RepeatWrapping;
+PAPER_TEXTURE.minFilter = THREE.LinearMipmapLinearFilter;
+PAPER_TEXTURE.magFilter = THREE.LinearFilter;
+
+// Tonal Art Maps — 7 livelli di tratteggio a densità crescente (Praun/Hoppe
+// "Real-Time Hatching", SIGGRAPH 2001, esteso con un livello sparso in più).
+// hatch_0 = molto sparso (transizione morbida verso il colore puro);
+// hatch_6 = cross-hatch saturo. Se hatch_0.jpg manca, Three.js usa una
+// texture default bianca → equivale a "nessun tratto" sul primo livello.
+// Tiled in screen-space dal HatchPass.
+const TAM_TEXTURES = (() => {
+  const loader = new THREE.TextureLoader();
+  const arr = [];
+  for (let i = 0; i < 7; i++) {
+    const t = loader.load(`assets/tam/hatch_${i}.jpg`);
+    t.wrapS = THREE.RepeatWrapping;
+    t.wrapT = THREE.RepeatWrapping;
+    t.minFilter = THREE.LinearMipmapLinearFilter;
+    t.magFilter = THREE.LinearFilter;
+    arr.push(t);
+  }
+  return arr;
+})();
+
+class WatercolorPass extends PostEffect {
+  constructor() {
+    super({
+      uniforms: {
+        uColor:         { value: null },
+        uNormal:        { value: null },
+        uDepth:         { value: null },
+        uPaper:         { value: PAPER_TEXTURE },
+        uTexel:         { value: new THREE.Vector2() },
+        uThickness:     { value: 0.6 },
+        uThreshold:     { value: 0.45 },
+        uPaperStrength: { value: 0.35 },
+        uPaperScale:    { value: 2.5 },
+        uInkColor:      { value: new THREE.Color(0x3a2a20) }  // seppia scuro
+      },
+      vertexShader: /* glsl */`
+        out vec2 vUv;
+        void main() {
+          vUv = position.xy * 0.5 + 0.5;
+          gl_Position = vec4(position.xy, 0.0, 1.0);
+        }
+      `,
+      fragmentShader: /* glsl */`
+        precision highp float;
+        in vec2 vUv;
+        uniform sampler2D uColor, uNormal, uDepth, uPaper;
+        uniform vec2 uTexel;
+        uniform float uThickness, uThreshold, uPaperStrength, uPaperScale;
+        uniform vec3 uInkColor;
+        out vec4 outColor;
+
+        float sobel(sampler2D tex, vec2 uv, float off) {
+          vec3 tl = texture(tex, uv + vec2(-1,-1)*uTexel*off).rgb;
+          vec3 tm = texture(tex, uv + vec2( 0,-1)*uTexel*off).rgb;
+          vec3 tr = texture(tex, uv + vec2( 1,-1)*uTexel*off).rgb;
+          vec3 ml = texture(tex, uv + vec2(-1, 0)*uTexel*off).rgb;
+          vec3 mr = texture(tex, uv + vec2( 1, 0)*uTexel*off).rgb;
+          vec3 bl = texture(tex, uv + vec2(-1, 1)*uTexel*off).rgb;
+          vec3 bm = texture(tex, uv + vec2( 0, 1)*uTexel*off).rgb;
+          vec3 br = texture(tex, uv + vec2( 1, 1)*uTexel*off).rgb;
+          vec3 gx = -tl - 2.0*ml - bl + tr + 2.0*mr + br;
+          vec3 gy = -tl - 2.0*tm - tr + bl + 2.0*bm + br;
+          return length(gx) + length(gy);
+        }
+
+        void main() {
+          vec3 color = texture(uColor, vUv).rgb;
+
+          // outline seppia (al posto del nero scuro)
+          if (uThickness > 0.0) {
+            float eN = sobel(uNormal, vUv, uThickness);
+            float eD = sobel(uDepth,  vUv, uThickness) * 6.0;
+            float e  = max(eN, eD);
+            float line = smoothstep(uThreshold, uThreshold + 0.1, e);
+            color = mix(color, uInkColor, line * 0.85);
+          }
+
+          // paper overlay screen-space (1 sample, tileato)
+          vec3 paper = texture(uPaper, vUv * uPaperScale).rgb;
+          color = color * mix(vec3(1.0), paper, uPaperStrength);
+
+          outColor = vec4(color, 1.0);
+        }
+      `
+    });
+  }
+
+  setInputs(gbuffer) {
+    this.material.uniforms.uColor.value  = gbuffer.color;
+    this.material.uniforms.uNormal.value = gbuffer.normal;
+    this.material.uniforms.uDepth.value  = gbuffer.depth;
+    const w = gbuffer.target.width, h = gbuffer.target.height;
+    this.material.uniforms.uTexel.value.set(1 / w, 1 / h);
+  }
+}
+
+// ============================================================================
+// === MODULO: post/HatchPass.js ==============================================
+// ============================================================================
+// Pensato per accoppiarsi a FlatMaterial: il colore arriva piatto, qui
+// ricalcoliamo N·L dalle normali del G-buffer e usiamo il risultato come
+// indice di luminanza per fare lookup in una Tonal Art Map a 7 livelli.
+// Implementazione fedele a Praun/Hoppe 2001 (estesa con un livello sparso in
+// più per ammorbidire l'ingresso del tratteggio): campiona i 7 livelli in
+// screen-space tileato e fa blend a triangolo fra TAM adiacenti per una
+// transizione tonale continua. Tutto in un singolo pass: TAM + Sobel + paper.
+//
+// Nota WebGL2: il sampler array `uTam[7]` non si può indicizzare con
+// un'espressione runtime (GLSL ES 3.00 §4.1.7), quindi sampliamo tutti e 7 i
+// livelli e li pesiamo con triangoli sovrapposti — sum dei pesi = 1 in [0,6].
+
+class HatchPass extends PostEffect {
+  constructor() {
+    super({
+      uniforms: {
+        uColor:         { value: null },
+        uNormal:        { value: null },
+        uDepth:         { value: null },
+        uPaper:         { value: PAPER_TEXTURE },
+        uTam:           { value: TAM_TEXTURES },  // array di 6 sampler2D
+        uTexel:         { value: new THREE.Vector2() },
+        uLightDir:      { value: new THREE.Vector3(0.3, 0.7, 0.6) },
+        uHatchScale:    { value: 7.0 },           // tile screen-space = scale*16 px
+        uHatchStrength: { value: 0.85 },
+        uLightCutoff:   { value: 0.20 },          // darkness sotto questa soglia → no tratti
+        uInkColor:      { value: new THREE.Color(0x1a1410) },
+        uThickness:     { value: 0.5 },
+        uThreshold:     { value: 0.7 },
+        uPaperStrength: { value: 0.35 },
+        uPaperScale:    { value: 2.5 }
+      },
+      vertexShader: /* glsl */`
+        out vec2 vUv;
+        void main() {
+          vUv = position.xy * 0.5 + 0.5;
+          gl_Position = vec4(position.xy, 0.0, 1.0);
+        }
+      `,
+      fragmentShader: /* glsl */`
+        precision highp float;
+        in vec2 vUv;
+        uniform sampler2D uColor, uNormal, uDepth, uPaper;
+        uniform sampler2D uTam[7];
+        uniform vec2 uTexel;
+        uniform vec3 uLightDir;
+        uniform float uHatchScale, uHatchStrength, uLightCutoff;
+        uniform vec3 uInkColor;
+        uniform float uThickness, uThreshold;
+        uniform float uPaperStrength, uPaperScale;
+        out vec4 outColor;
+
+        float sobel(sampler2D tex, vec2 uv, float off) {
+          vec3 tl = texture(tex, uv + vec2(-1,-1)*uTexel*off).rgb;
+          vec3 tm = texture(tex, uv + vec2( 0,-1)*uTexel*off).rgb;
+          vec3 tr = texture(tex, uv + vec2( 1,-1)*uTexel*off).rgb;
+          vec3 ml = texture(tex, uv + vec2(-1, 0)*uTexel*off).rgb;
+          vec3 mr = texture(tex, uv + vec2( 1, 0)*uTexel*off).rgb;
+          vec3 bl = texture(tex, uv + vec2(-1, 1)*uTexel*off).rgb;
+          vec3 bm = texture(tex, uv + vec2( 0, 1)*uTexel*off).rgb;
+          vec3 br = texture(tex, uv + vec2( 1, 1)*uTexel*off).rgb;
+          vec3 gx = -tl - 2.0*ml - bl + tr + 2.0*mr + br;
+          vec3 gy = -tl - 2.0*tm - tr + bl + 2.0*bm + br;
+          return length(gx) + length(gy);
+        }
+
+        void main() {
+          vec3 color = texture(uColor, vUv).rgb;
+
+          // ricostruzione normale view-space (decode da [0,1])
+          vec3 N = normalize(texture(uNormal, vUv).xyz * 2.0 - 1.0);
+          vec3 L = normalize(uLightDir);
+          float ndl = max(dot(N, L), 0.0);
+          // ambient floor: la zona meno illuminata non è mai nero pieno
+          float lit = clamp(ndl * 0.85 + 0.15, 0.0, 1.0);
+          float darkness = 1.0 - lit;
+
+          // TAM lookup screen-space tileato. Tile size = uHatchScale * 16 px.
+          vec2 tamUv = (vUv / uTexel) / (uHatchScale * 16.0);
+          float s0 = texture(uTam[0], tamUv).r;
+          float s1 = texture(uTam[1], tamUv).r;
+          float s2 = texture(uTam[2], tamUv).r;
+          float s3 = texture(uTam[3], tamUv).r;
+          float s4 = texture(uTam[4], tamUv).r;
+          float s5 = texture(uTam[5], tamUv).r;
+          float s6 = texture(uTam[6], tamUv).r;
+
+          // Blend a triangolo fra 7 livelli: due pesi adiacenti != 0,
+          // somma = 1 in [0,6] → transizione tonale continua senza bande.
+          float t = clamp(darkness * 6.0, 0.0, 6.0);
+          float tam = 0.0;
+          tam += s0 * max(0.0, 1.0 - abs(t - 0.0));
+          tam += s1 * max(0.0, 1.0 - abs(t - 1.0));
+          tam += s2 * max(0.0, 1.0 - abs(t - 2.0));
+          tam += s3 * max(0.0, 1.0 - abs(t - 3.0));
+          tam += s4 * max(0.0, 1.0 - abs(t - 4.0));
+          tam += s5 * max(0.0, 1.0 - abs(t - 5.0));
+          tam += s6 * max(0.0, 1.0 - abs(t - 6.0));
+
+          // TAM: bianco = no inchiostro, nero = tratto pieno.
+          float ink = (1.0 - tam) * uHatchStrength;
+          // Gate sui toni chiari: sotto uLightCutoff il colore resta puro,
+          // come nelle stampe d'incisione dove le zone in piena luce sono carta.
+          float lightGate = smoothstep(max(uLightCutoff - 0.05, 0.0),
+                                       uLightCutoff + 0.05, darkness);
+          ink *= lightGate;
+          color = mix(color, uInkColor, ink);
+
+          // Sobel outline (riusa normal + depth del G-buffer)
+          if (uThickness > 0.0) {
+            float eN = sobel(uNormal, vUv, uThickness);
+            float eD = sobel(uDepth,  vUv, uThickness) * 6.0;
+            float e  = max(eN, eD);
+            float line = smoothstep(uThreshold, uThreshold + 0.1, e);
+            color = mix(color, uInkColor, line * 0.9);
+          }
+
+          // paper overlay screen-space
+          vec3 paper = texture(uPaper, vUv * uPaperScale).rgb;
+          color = color * mix(vec3(1.0), paper, uPaperStrength);
+
+          outColor = vec4(color, 1.0);
+        }
+      `
+    });
+
+    // tmp vectors riusati nel loop per evitare allocazioni
+    this._lightWorld  = new THREE.Vector3();
+    this._targetWorld = new THREE.Vector3();
+  }
+
+  setInputs(gbuffer) {
+    this.material.uniforms.uColor.value  = gbuffer.color;
+    this.material.uniforms.uNormal.value = gbuffer.normal;
+    this.material.uniforms.uDepth.value  = gbuffer.depth;
+    const w = gbuffer.target.width, h = gbuffer.target.height;
+    this.material.uniforms.uTexel.value.set(1 / w, 1 / h);
+  }
+
+  // Trasforma la direzione della prima DirectionalLight della scena in
+  // view-space, identico a quello che Three.js fa internamente per popolare
+  // `directionalLights[0].direction`. Chiamato dallo StyleManager prima del
+  // render del pass.
+  update(scene, camera) {
+    let dirLight = null;
+    scene.traverse(o => { if (!dirLight && o.isDirectionalLight) dirLight = o; });
+    if (!dirLight) return;
+    this._lightWorld.setFromMatrixPosition(dirLight.matrixWorld);
+    this._targetWorld.setFromMatrixPosition(dirLight.target.matrixWorld);
+    const dir = this._lightWorld.sub(this._targetWorld);
+    dir.transformDirection(camera.matrixWorldInverse);
+    this.material.uniforms.uLightDir.value.copy(dir);
+  }
+}
+
+// ============================================================================
+// === MODULO: post/KuwaharaPass.js ===========================================
+// ============================================================================
+// Filtro Kuwahara anisotropico — porting fedele dello shader Godot fornito.
+// Pipeline: Sobel -> structure tensor -> eigen -> smoothing -> Kuwahara con
+// kernel deformato secondo l'anisotropia locale dell'immagine.
+// Effetto: superfici "appiattite" come pennellate, bordi preservati.
+
+class KuwaharaPass extends PostEffect {
+  constructor() {
+    super({
+      uniforms: {
+        uColor:      { value: null },
+        uTexel:      { value: new THREE.Vector2() },
+        uKernelSize: { value: 8 },
+        uHardness:   { value: 8.0 },
+        uSharpness:  { value: 8.0 },
+        uZeta:       { value: 0.1 }
+      },
+      vertexShader: /* glsl */`
+        out vec2 vUv;
+        void main() {
+          vUv = position.xy * 0.5 + 0.5;
+          gl_Position = vec4(position.xy, 0.0, 1.0);
+        }
+      `,
+      fragmentShader: /* glsl */`
+        precision highp float;
+        precision highp int;
+        in vec2 vUv;
+        uniform sampler2D uColor;
+        uniform vec2 uTexel;
+        uniform int uKernelSize;
+        uniform float uHardness;
+        uniform float uSharpness;
+        uniform float uZeta;
+        out vec4 outColor;
+
+        const int  N             = 8;
+        const float ALPHA        = 1.0;
+        const float ZERO_CROSS   = 0.58;
+        const float PI           = 3.14159265359;
+
+        float gaussian(float sigma, float pos) {
+          return (1.0 / sqrt(2.0 * PI * sigma * sigma)) * exp(-(pos * pos) / (2.0 * sigma * sigma));
+        }
+
+        // Sobel sui 3 canali → struttura tensor 2x2 (xx, yy, xy)
+        vec4 sobelTensor(vec2 d, vec2 uv) {
+          vec3 sx = (
+             1.0 * texture(uColor, uv + vec2(-d.x, -d.y)).rgb +
+             2.0 * texture(uColor, uv + vec2(-d.x,  0.0)).rgb +
+             1.0 * texture(uColor, uv + vec2(-d.x,  d.y)).rgb +
+            -1.0 * texture(uColor, uv + vec2( d.x, -d.y)).rgb +
+            -2.0 * texture(uColor, uv + vec2( d.x,  0.0)).rgb +
+            -1.0 * texture(uColor, uv + vec2( d.x,  d.y)).rgb
+          ) / 4.0;
+          vec3 sy = (
+             1.0 * texture(uColor, uv + vec2(-d.x, -d.y)).rgb +
+             2.0 * texture(uColor, uv + vec2( 0.0, -d.y)).rgb +
+             1.0 * texture(uColor, uv + vec2( d.x, -d.y)).rgb +
+            -1.0 * texture(uColor, uv + vec2(-d.x,  d.y)).rgb +
+            -2.0 * texture(uColor, uv + vec2( 0.0,  d.y)).rgb +
+            -1.0 * texture(uColor, uv + vec2( d.x,  d.y)).rgb
+          ) / 4.0;
+          return vec4(dot(sx, sx), dot(sy, sy), dot(sx, sy), 1.0);
+        }
+
+        // Smoothing del fattore di scala (n, phi, A) modulato dall'immagine.
+        // NB: nell'originale Godot il "blur" moltiplica componente per componente
+        // il fattore con il colore — porting fedele.
+        vec4 smoothFactor(vec4 fac, vec2 uv, vec2 d) {
+          vec4 col = vec4(0.0);
+          float ks = 0.0;
+          for (int x = -5; x <= 5; x++) {
+            vec4 c = fac * texture(uColor, uv + vec2(float(x), 0.0) * d);
+            float g = gaussian(2.0, float(x));
+            col += c * g;
+            ks  += g;
+          }
+          col = col / ks;
+          for (int y = -5; y <= 5; y++) {
+            vec4 c = fac * texture(uColor, uv + vec2(0.0, float(y)) * d);
+            float g = gaussian(2.0, float(y));
+            col += c * g;
+            ks  += g;
+          }
+          return col / ks;
+        }
+
+        // Eigenvalori e angolo principale dello structure tensor
+        vec4 scalingFactor(vec4 t) {
+          float disc = sqrt(t.x * t.x - 2.0 * t.x * t.y + t.y * t.y + 4.0 * t.z * t.z);
+          float l1 = 0.5 * (t.x + t.y + disc);
+          float l2 = 0.5 * (t.x + t.y - disc);
+          vec2 v = vec2(l1 - t.x, -t.z);
+          vec2 n = (length(v) > 0.0) ? normalize(v) : vec2(0.0, 1.0);
+          float phi = -atan(n.y / n.x);
+          float A = (l1 + l2 > 0.0) ? (l1 - l2) / (l1 + l2) : 0.0;
+          return vec4(n, phi, A);
+        }
+
+        // Kuwahara generalizzato anisotropico a 8 settori, kernel ruotato
+        // e schiacciato secondo (phi, A).
+        vec4 kuwahara(float phi, float A, vec2 d, vec2 uv) {
+          int radius = uKernelSize / 2;
+          float a = float(radius) * clamp((ALPHA + A) / ALPHA, 0.1, 2.0);
+          float b = float(radius) * clamp(ALPHA / (ALPHA + A), 0.1, 2.0);
+
+          float cs = cos(phi);
+          float sn = sin(phi);
+          mat2 R = mat2(cs, -sn, sn, cs);
+          mat2 S = mat2(0.5 / a, 0.0, 0.0, 0.5 / b);
+          // NB: matrixCompMult è componente per componente, non product matriciale.
+          // Bug sospetto dell'originale ma lo conserviamo per fedeltà.
+          mat2 SR = matrixCompMult(S, R);
+
+          int max_x = int(sqrt(a * a * cs * cs + b * b * sn * sn));
+          int max_y = int(sqrt(a * a * sn * sn + b * b * cs * cs));
+
+          float sinZC = sin(ZERO_CROSS);
+          float eta = (uZeta + cos(ZERO_CROSS)) / (sinZC * sinZC);
+
+          vec4 m[8];
+          vec3 s[8];
+          for (int k = 0; k < 8; k++) {
+            m[k] = vec4(0.0);
+            s[k] = vec3(0.0);
+          }
+
+          for (int y = -max_y; y <= max_y; y++) {
+            for (int x = -max_x; x <= max_x; x++) {
+              vec2 p = SR * vec2(float(x), float(y));
+              if (dot(p, p) <= 0.25) {
+                vec3 c = clamp(texture(uColor, uv + vec2(float(x), float(y)) * d).rgb, 0.0, 1.0);
+                float sumw = 0.0;
+                float w[8];
+                float z, vxx, vyy;
+
+                vxx = uZeta - eta * p.x * p.x;
+                vyy = uZeta - eta * p.y * p.y;
+                z = max(0.0,  p.y + vxx); w[0] = z * z; sumw += w[0];
+                z = max(0.0, -p.x + vyy); w[2] = z * z; sumw += w[2];
+                z = max(0.0, -p.y + vxx); w[4] = z * z; sumw += w[4];
+                z = max(0.0,  p.x + vyy); w[6] = z * z; sumw += w[6];
+
+                p = sqrt(2.0) / 2.0 * vec2(p.x - p.y, p.x + p.y);
+                vxx = uZeta - eta * p.x * p.x;
+                vyy = uZeta - eta * p.y * p.y;
+                z = max(0.0,  p.y + vxx); w[1] = z * z; sumw += w[1];
+                z = max(0.0, -p.x + vyy); w[3] = z * z; sumw += w[3];
+                z = max(0.0, -p.y + vxx); w[5] = z * z; sumw += w[5];
+                z = max(0.0,  p.x + vyy); w[7] = z * z; sumw += w[7];
+
+                float g = exp(-3.125 * dot(p, p)) / sumw;
+                for (int k = 0; k < 8; k++) {
+                  float wk = w[k] * g;
+                  m[k] += vec4(c * wk, wk);
+                  s[k] += c * c * wk;
+                }
+              }
+            }
+          }
+
+          vec4 result = vec4(0.0);
+          for (int k = 0; k < 8; k++) {
+            m[k].rgb /= m[k].w;
+            s[k] = abs(s[k] / m[k].w - m[k].rgb * m[k].rgb);
+            float sigma2 = s[k].r + s[k].g + s[k].b;
+            float w = 1.0 / (1.0 + pow(uHardness * 1000.0 * sigma2, 0.5 * uSharpness));
+            result += vec4(m[k].rgb * w, w);
+          }
+          return clamp(result / result.w, 0.0, 1.0);
+        }
+
+        void main() {
+          vec4 tensor = sobelTensor(uTexel, vUv);
+          vec4 fac    = scalingFactor(tensor);
+          vec4 sm     = smoothFactor(fac, vUv, uTexel);
+          outColor    = kuwahara(sm.z, sm.w, uTexel, vUv);
+        }
+      `
+    });
+  }
+
+  setInputs(gbuffer) {
+    this.material.uniforms.uColor.value = gbuffer.color;
+    const w = gbuffer.target.width, h = gbuffer.target.height;
+    this.material.uniforms.uTexel.value.set(1 / w, 1 / h);
+  }
+}
+
+// ============================================================================
+// === MODULO: StyleManager.js ================================================
+// ============================================================================
+// L'orchestratore. Mantiene:
+//   - un registry di factory di materiali (callable → nuovo materiale)
+//   - un registry di post-effect
+//   - lo stato corrente (quale materiale / quale post)
+// Espone API per:
+//   - setMaterial(name): cambia il materiale corrente (factory)
+//   - createMaterial(overrides): istanzia un materiale concreto applicabile
+//     a una mesh specifica (ognuna ha il suo colore, parametri, ecc.)
+//   - setPostEffect(name): cambia il post effect attivo
+//   - render(scene, camera): esegue la pipeline completa
+
+class StyleManager {
+  constructor(renderer, width, height) {
+    this.renderer = renderer;
+    this.gbuffer = new GBufferRenderer(renderer, width, height);
+
+    // registry materiali: una factory per nome. I params sono gli "overrides"
+    // per-istanza (colore, matcap, ecc.)
+    // ramp condivisa fra tutte le istanze RampMaterial (generata 1 volta)
+    const sharedRamp = buildRampTexture();
+
+    this.materialFactories = {
+      cel:           (params) => new CelMaterial(params),
+      ramp:          (params) => new RampMaterial({ ...params, ramp: sharedRamp }),
+      flat:          (params) => new FlatMaterial(params),
+      'matcap-clay': (params) => new StylizedMatcapMaterial({ ...params, matcapTexture: buildMatcapTexture(MATCAP_RECIPES.clay) }),
+      'matcap-gold': (params) => new StylizedMatcapMaterial({ ...params, matcapTexture: buildMatcapTexture(MATCAP_RECIPES.gold) }),
+      base:          (params) => new BaseStylizedMaterial(params)
+    };
+
+    // registry post-effect: istanze riusabili
+    this.postEffects = {
+      outline:    new OutlinePass(),
+      watercolor: new WatercolorPass(),
+      hatch:      new HatchPass(),
+      kuwahara:   new KuwaharaPass(),
+      none:       new PassthroughPass()
+    };
+
+    this.currentMaterial = 'cel';
+    this.currentPost = 'outline';
+  }
+
+  // --- materiali ---
+  setMaterial(name) {
+    if (!this.materialFactories[name]) throw new Error('Materiale ignoto: ' + name);
+    this.currentMaterial = name;
+  }
+
+  /**
+   * Crea una nuova istanza del materiale corrente, con overrides per questa mesh.
+   * I chiamanti la usano così:
+   *   mesh.material = styleManager.createMaterial({ color: 0xff0000 });
+   */
+  createMaterial(params = {}) {
+    return this.materialFactories[this.currentMaterial](params);
+  }
+
+  // --- post ---
+  setPostEffect(name) {
+    if (!this.postEffects[name]) throw new Error('Post effect ignoto: ' + name);
+    this.currentPost = name;
+  }
+
+  setPostParam(name, value) {
+    this.postEffects[this.currentPost].setParam(name === 'thickness' ? 'uThickness' : name === 'threshold' ? 'uThreshold' : name, value);
+  }
+
+  // --- pipeline render ---
+  render(scene, camera) {
+    // pass 1: scena nel G-buffer
+    this.gbuffer.render(scene, camera);
+    // pass 2: post-effect corrente sullo schermo
+    const post = this.postEffects[this.currentPost];
+    post.setInputs(this.gbuffer);
+    // Hook opzionale: alcuni pass (HatchPass) hanno bisogno di sincronizzare
+    // uniform dipendenti dalla scena (es. direzione della luce in view-space).
+    if (post.update) post.update(scene, camera);
+    post.render(this.renderer, null);
+  }
+
+  setSize(w, h) {
+    this.gbuffer.setSize(w, h);
+  }
+}
+
+// ============================================================================
+// === MODULO: Game.js ========================================================
+// ============================================================================
+// Contenitore di scena, camera, loop. In un progetto vero qui metti
+// la macchina a stati del personaggio, il caricamento delle stanze, ecc.
+// Qui è tenuto minimale: placeholder geometrico + piano + luce.
+
+class Game {
+  constructor(host) {
+    this.host = host;
+    const w = host.clientWidth, h = host.clientHeight;
+
+    this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+    this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.renderer.setSize(w, h);
+    this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace; // manteniamo lineare, il color grading lo fai tu
+    host.appendChild(this.renderer.domElement);
+
+    // test WebGL2
+    if (!this.renderer.capabilities.isWebGL2) {
+      document.getElementById('error').textContent = 'Errore: WebGL2 richiesto';
+      document.getElementById('error').style.display = 'block';
+      throw new Error('WebGL2 required');
+    }
+
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0x87CEEB);  // azzurro cielo
+
+    this.camera = new THREE.PerspectiveCamera(35, w/h, 0.1, 100);
+    this.camera.position.set(4, 3, 5);
+    this.camera.lookAt(0, 1, 0);
+
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.target.set(0, 1, 0);
+    this.controls.enableDamping = true;
+
+    // luce: una sola DirectionalLight è sufficiente per il cel shading base
+    this.dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    this.dirLight.position.set(3, 5, 4);
+    this.scene.add(this.dirLight);
+    this.scene.add(new THREE.AmbientLight(0x404050, 0.3)); // non usata dagli shader stilizzati ma innocua
+
+    this.styleManager = null;
+    this.orbitCamera = true;
+    this.clock = new THREE.Clock();
+    this.mixer = null;
+    this.character = null;
+
+    console.warn('[TRACE] constructor fine, avvio _loadCharacter');
+    this._buildPlaceholderScene();
+    this._loadCharacter('assets/idle.glb');
+    this._loadStatue('assets/statua.glb');
+  }
+
+  // Carica un GLB (tipicamente Mixamo), lo aggiunge allo stylizedGroup,
+  // applica il materiale corrente e avvia la prima clip di animazione.
+  async _loadCharacter(url) {
+    console.warn('[TRACE] _loadCharacter chiamato con:', url);
+    try {
+      const loader = new GLTFLoader();
+      console.warn('[TRACE] loader creato, avvio loadAsync');
+      const gltf = await loader.loadAsync(url);
+      console.warn('[TRACE] loadAsync risolto, gltf:', gltf);
+
+      // NB: Box3.setFromObject su SkinnedMesh usa la bbox della *geometria*
+      // (vertici in bind pose, prima dello skinning), non la dimensione reale.
+      // Quindi auto-scaling basato su questa misura è sbagliato. Mixamo
+      // esportato bene è già a scala metro: lascio scale = 1.0.
+      // Origine Mixamo è ai piedi → y = 0 va bene.
+      gltf.scene.position.set(-1, 0, 0);
+
+      // Cattura texture diffuse originali e tinta. Se la mesh ha una map
+      // (es. skin/clothes Mixamo), usiamo bianco come tinta così la texture
+      // viene mostrata "pura"; altrimenti fallback al colore marrone.
+      // Inoltre: i Mixamo separano il personaggio in mesh distinte. Nel nostro
+      // modello "Ch22_Body" contiene la pelle (volto + braccia) e ha bisogno
+      // di 4 step per ammorbidire le transizioni; vestiti/capelli stanno bene
+      // con 3. Il pattern è ampio per coprire altri Mixamo (head/face/skin/body).
+      const SKIN_PATTERN = /body|head|face|skin|eye/i;
+      gltf.scene.traverse(obj => {
+        if (obj.isMesh) {
+          const origMap = obj.material && obj.material.map;
+          obj.userData.styleMap = origMap || null;
+          obj.userData.styleColor = origMap ? 0xffffff : 0x884422;
+          const matName = obj.material ? obj.material.name : '';
+          const isSkin = SKIN_PATTERN.test(obj.name) || SKIN_PATTERN.test(matName);
+          obj.userData.styleSteps = isSkin ? 4 : 3;
+          console.log(`mesh "${obj.name}" / mat "${matName}" → ${obj.userData.styleSteps} step${isSkin ? ' (pelle)' : ''}`);
+        }
+      });
+
+      this.character = gltf.scene;
+      this.stylizedGroup.add(gltf.scene);
+
+      // Riapplica i materiali stilizzati ai mesh appena caricati
+      if (this.styleManager) this.applyMaterialToScene();
+
+      // Anima la prima clip se presente
+      if (gltf.animations && gltf.animations.length > 0) {
+        this.mixer = new THREE.AnimationMixer(gltf.scene);
+        this.mixer.clipAction(gltf.animations[0]).play();
+        console.log(`Caricato ${url}: ${gltf.animations.length} animazioni, prima = "${gltf.animations[0].name}"`);
+      } else {
+        console.warn(`Caricato ${url} ma nessuna animazione trovata`);
+      }
+    } catch (err) {
+      console.error('Errore caricamento personaggio:', err);
+      const e = document.getElementById('error');
+      e.textContent = 'Errore caricamento personaggio: ' + err.message;
+      e.style.display = 'block';
+    }
+  }
+
+  // Carica un GLB statico (no skinning, no animazioni) e lo aggiunge allo
+  // stylizedGroup. Eredita color/map dai materiali originali del GLB; se la
+  // mesh non ha texture e nessun colore esplicito, fallback marmo chiaro.
+  async _loadStatue(url) {
+    try {
+      const loader = new GLTFLoader();
+      const gltf = await loader.loadAsync(url);
+
+      gltf.scene.position.set(1.0, 0, -0.5);
+
+      gltf.scene.traverse(obj => {
+        if (obj.isMesh) {
+          const origMap = obj.material && obj.material.map;
+          const origColor = obj.material && obj.material.color
+            ? obj.material.color.getHex() : null;
+          obj.userData.styleMap = origMap || null;
+          obj.userData.styleColor = origMap
+            ? 0xffffff
+            : (origColor != null ? origColor : 0xc8c0a8);
+          obj.userData.styleSteps = 3;
+        }
+      });
+
+      this.stylizedGroup.add(gltf.scene);
+      if (this.styleManager) this.applyMaterialToScene();
+      console.log(`Caricata statua da ${url}`);
+    } catch (err) {
+      console.error('Errore caricamento statua:', err);
+      const e = document.getElementById('error');
+      e.textContent = 'Errore caricamento statua: ' + err.message;
+      e.style.display = 'block';
+    }
+  }
+
+  // --- scena base ---
+  // Solo il pavimento è procedurale; tutti gli altri oggetti vengono dai GLB
+  // caricati in _loadCharacter / _loadStatue / ecc.
+  _buildPlaceholderScene() {
+    // contenitore di tutti gli oggetti "stilizzabili"
+    this.stylizedGroup = new THREE.Group();
+    this.scene.add(this.stylizedGroup);
+
+    // pavimento
+    const floor = new THREE.Mesh(
+      new THREE.BoxGeometry(8, 0.2, 8),
+      null  // il materiale lo applicherà StyleManager
+    );
+    floor.position.y = -0.1;
+    floor.userData.styleColor = 0x4a3020;
+    this.stylizedGroup.add(floor);
+  }
+
+  setStyleManager(sm) {
+    this.styleManager = sm;
+    this.applyMaterialToScene();
+  }
+
+  /**
+   * Applica il materiale corrente dello StyleManager a tutti gli oggetti
+   * del gruppo stilizzato. Ogni oggetto riceve una propria istanza con il
+   * suo colore (letto da userData.styleColor).
+   */
+  applyMaterialToScene() {
+    if (!this.styleManager) return;
+    this.stylizedGroup.traverse(obj => {
+      if (obj.isMesh) {
+        if (obj.material && obj.material.dispose) obj.material.dispose();
+        obj.material = this.styleManager.createMaterial({
+          color: obj.userData.styleColor || 0xcccccc,
+          map: obj.userData.styleMap || null,
+          steps: obj.userData.styleSteps || 3
+        });
+      }
+    });
+  }
+
+  onResize() {
+    const w = this.host.clientWidth, h = this.host.clientHeight;
+    this.renderer.setSize(w, h);
+    this.camera.aspect = w/h;
+    this.camera.updateProjectionMatrix();
+    if (this.styleManager) this.styleManager.setSize(w, h);
+  }
+
+  start() {
+    const loop = () => {
+      requestAnimationFrame(loop);
+      const dt = this.clock.getDelta();
+
+      if (this.orbitCamera) {
+        const t = this.clock.elapsedTime * 0.15;
+        this.camera.position.x = Math.cos(t) * 6;
+        this.camera.position.z = Math.sin(t) * 6;
+        this.camera.position.y = 3;
+        this.camera.lookAt(0, 1, 0);
+      } else {
+        this.controls.update();
+      }
+
+      if (this.mixer) this.mixer.update(dt);
+
+      if (this.styleManager) {
+        this.styleManager.render(this.scene, this.camera);
+      } else {
+        this.renderer.render(this.scene, this.camera);
+      }
+    };
+    loop();
+  }
+}
+
+// ============================================================================
+// === BOOTSTRAP / UI =========================================================
+// ============================================================================
+
+const host = document.getElementById('canvas-host');
+let game, style;
+try {
+  game = new Game(host);
+  style = new StyleManager(game.renderer, host.clientWidth, host.clientHeight);
+  style.setMaterial('cel');
+  style.setPostEffect('outline');
+  game.setStyleManager(style);
+  game.start();
+} catch (err) {
+  console.error(err);
+  const e = document.getElementById('error');
+  e.textContent = 'Errore: ' + err.message;
+  e.style.display = 'block';
+}
+
+// UI wiring
+const $ = id => document.getElementById(id);
+
+$('mat-preset').onchange = e => {
+  style.setMaterial(e.target.value);
+  game.applyMaterialToScene();
+};
+
+$('post-preset').onchange = e => {
+  const v = e.target.value;
+  style.setPostEffect(v);
+  const hasOutline = (v === 'outline' || v === 'watercolor' || v === 'hatch');
+  $('outline-controls').style.display    = hasOutline ? '' : 'none';
+  $('kuwahara-controls').style.display   = v === 'kuwahara'   ? '' : 'none';
+  $('watercolor-controls').style.display = v === 'watercolor' ? '' : 'none';
+  $('hatch-controls').style.display      = v === 'hatch'      ? '' : 'none';
+  // Sincronizza i valori correnti degli slider sul nuovo pass
+  if (hasOutline) {
+    style.setPostParam('thickness', parseFloat($('thick').value));
+    style.setPostParam('threshold', parseFloat($('thr').value));
+  }
+};
+
+$('rotate').onchange = e => { game.orbitCamera = e.target.checked; };
+
+$('thick').oninput = e => {
+  const v = parseFloat(e.target.value);
+  $('thick-val').textContent = v.toFixed(1);
+  style.setPostParam('thickness', v);
+};
+
+$('thr').oninput = e => {
+  const v = parseFloat(e.target.value);
+  $('thr-val').textContent = v.toFixed(2);
+  style.setPostParam('threshold', v);
+};
+
+$('ks').oninput = e => {
+  const v = parseInt(e.target.value, 10);
+  $('ks-val').textContent = String(v);
+  style.postEffects.kuwahara.material.uniforms.uKernelSize.value = v;
+};
+$('hd').oninput = e => {
+  const v = parseFloat(e.target.value);
+  $('hd-val').textContent = v.toFixed(1);
+  style.postEffects.kuwahara.material.uniforms.uHardness.value = v;
+};
+$('sh').oninput = e => {
+  const v = parseFloat(e.target.value);
+  $('sh-val').textContent = v.toFixed(1);
+  style.postEffects.kuwahara.material.uniforms.uSharpness.value = v;
+};
+
+$('psc').oninput = e => {
+  const v = parseFloat(e.target.value);
+  $('psc-val').textContent = v.toFixed(1);
+  style.postEffects.watercolor.material.uniforms.uPaperScale.value = v;
+};
+$('pst').oninput = e => {
+  const v = parseFloat(e.target.value);
+  $('pst-val').textContent = v.toFixed(2);
+  style.postEffects.watercolor.material.uniforms.uPaperStrength.value = v;
+};
+
+$('hsc').oninput = e => {
+  const v = parseFloat(e.target.value);
+  $('hsc-val').textContent = v.toFixed(1);
+  style.postEffects.hatch.material.uniforms.uHatchScale.value = v;
+};
+$('hst').oninput = e => {
+  const v = parseFloat(e.target.value);
+  $('hst-val').textContent = v.toFixed(2);
+  style.postEffects.hatch.material.uniforms.uHatchStrength.value = v;
+};
+$('hlc').oninput = e => {
+  const v = parseFloat(e.target.value);
+  $('hlc-val').textContent = v.toFixed(2);
+  style.postEffects.hatch.material.uniforms.uLightCutoff.value = v;
+};
+$('hpst').oninput = e => {
+  const v = parseFloat(e.target.value);
+  $('hpst-val').textContent = v.toFixed(2);
+  style.postEffects.hatch.material.uniforms.uPaperStrength.value = v;
+};
+$('hpsc').oninput = e => {
+  const v = parseFloat(e.target.value);
+  $('hpsc-val').textContent = v.toFixed(1);
+  style.postEffects.hatch.material.uniforms.uPaperScale.value = v;
+};
+
+window.addEventListener('resize', () => game.onResize());
+</script>
+</body>
+</html>
