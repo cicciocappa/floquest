@@ -338,7 +338,10 @@
 }
 #seg-editor .inspector input[type="number"] { max-width: 80px; flex: 0 0 auto; }
 #seg-editor .inspector input[type="checkbox"] { margin: 0; }
-#seg-editor .inspector .vec3 { display: flex; gap: 3px; flex: 1; }
+/* min-width:0 spegne il default `min-width: auto` dei flex item, che altrimenti
+   pari al min-content dei 3 input numerici (~150px ciascuno) gonfia .vec3 a
+   ~510px e fa straripare il form fuori dal pannello. */
+#seg-editor .inspector .vec3 { display: flex; gap: 3px; flex: 1; min-width: 0; }
 #seg-editor .inspector .vec3 input { flex: 1; max-width: none; }
 #seg-editor .inspector .vec3 .axis {
   color: #666;
@@ -374,6 +377,7 @@
   display: flex;
   gap: 4px;
   align-items: center;
+  min-width: 0;
 }
 #seg-editor .inspector .pos-row > .sublabel {
   color: #666;
