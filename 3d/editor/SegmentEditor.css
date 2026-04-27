@@ -248,6 +248,53 @@
   color: #888;
   font-family: ui-monospace, monospace;
   font-size: 10px;
+  /* Lascia scorrere i bottoni a destra senza farsi pushare via dalla info. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+#seg-editor .add-track {
+  background: #232328;
+  color: #ddd;
+  border: 1px solid #3a3a42;
+  border-radius: 3px;
+  padding: 2px 4px;
+  font-size: 10px;
+  font-family: ui-monospace, monospace;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+#seg-editor .dup-track,
+#seg-editor .rm-track {
+  background: transparent;
+  border: 1px solid #3a3a42;
+  color: #aaa;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+  flex: 0 0 auto;
+}
+#seg-editor .dup-track:hover:not(:disabled),
+#seg-editor .rm-track:hover:not(:disabled) {
+  background: #2a2a2e;
+  color: #fff;
+}
+#seg-editor .dup-track:disabled,
+#seg-editor .rm-track:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+#seg-editor .rm-track { color: #ea7a7a; }
+#seg-editor .rm-track:hover:not(:disabled) {
+  background: #3a1a1a;
+  color: #ff9090;
+  border-color: #5a2a2a;
 }
 
 #seg-editor .inspector {

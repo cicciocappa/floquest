@@ -33,6 +33,17 @@
 //   - Tab Inspector disabilitato finché non clicchi una clip; ridiventa disabled
 //     se la clip selezionata sparisce per un edit del JSON.
 //
+// Funzionalità Fase 5 (add/remove track):
+//   - Toolbar estesa con "+ Add track" (select coi 5 type schema'd),
+//     "Duplicate" e "Remove" (entrambi gated dalla selezione).
+//   - Add: default values prodotti da defaultTrackFor() sfruttando gli
+//     anchor/clip/prop disponibili nel director. Append a seg.tracks, la
+//     nuova clip diventa la selezione, view → inspector.
+//   - Duplicate: deep clone via JSON round-trip (la track è pure-data),
+//     stesso `at`, append a fine lista, la copia diventa selezione.
+//   - Remove: splice + deselezione + view → JSON. Niente confirm: il dirty
+//     marker e Ctrl+Z (Fase 9) sono la rete.
+//
 // Salvataggio: fa PUT a `/save/<segmentsPath>`. Il dev_server.py scrive il
 // file relativo alla CWD da cui è stato lanciato (tipicamente `3d/`).
 
@@ -96,6 +107,11 @@ function buildPanel(state, CodeMirror) {
           <button class="view-tab json selected" data-view="json">JSON</button>
           <button class="view-tab inspector" data-view="inspector" disabled>Inspector</button>
           <span class="toolbar-info"></span>
+          <select class="add-track" title="Aggiungi track al segment">
+            <option value="">+ Add track</option>
+          </select>
+          <button class="dup-track" title="Duplica clip selezionata" disabled>⎘</button>
+          <button class="rm-track"  title="Rimuovi clip selezionata"  disabled>×</button>
         </div>
         <div class="cm-host"></div>
         <div class="inspector" hidden></div>
@@ -156,7 +172,7 @@ function buildPanel(state, CodeMirror) {
         renderTimeline(state, obj);
         // Se inspector aperto, re-popola dal nuovo oggetto. Se l'indice non
         // è più valido (es. utente ha tolto un track), torna alla vista JSON.
-        updateInspectorTabState(state);
+        updateActionsState(state);
         if (state.view === 'inspector') {
           const tr = obj.tracks && obj.tracks[state.selectedTrackIndex];
           if (tr && TRACK_SCHEMAS[tr.type]) renderInspector(state);
@@ -191,6 +207,24 @@ function buildPanel(state, CodeMirror) {
     });
   });
 
+  // Add/duplicate/remove track (Fase 5). Le opzioni del select sono i type
+  // che hanno uno schema noto (gli unici che sappiamo costruire con default
+  // sensati). Il select è "azione monouso": dopo l'add torna al placeholder.
+  const addSel = panel.querySelector('.add-track');
+  for (const type of Object.keys(TRACK_SCHEMAS)) {
+    const opt = document.createElement('option');
+    opt.value = type;
+    opt.textContent = TRACK_SCHEMAS[type].label;
+    addSel.appendChild(opt);
+  }
+  addSel.addEventListener('change', () => {
+    const type = addSel.value;
+    addSel.value = '';
+    if (type) addTrack(state, type);
+  });
+  panel.querySelector('.dup-track').addEventListener('click', () => duplicateTrack(state));
+  panel.querySelector('.rm-track').addEventListener('click', () => removeTrack(state));
+
   // Ctrl+S
   window.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -216,7 +250,7 @@ function selectSegment(state, id) {
   });
 
   renderTimeline(state, seg);
-  updateInspectorTabState(state);
+  updateActionsState(state);
   setView(state, 'json');
 }
 
@@ -454,16 +488,23 @@ function setView(state, view) {
   }
 }
 
-// Tab Inspector è abilitato sse abbiamo una clip valida selezionata.
-function updateInspectorTabState(state) {
+// Stato dei bottoni di azione gated dalla selezione.
+//   - Inspector tab: solo se la clip ha uno schema (può rendere il form).
+//   - Duplicate/Remove: qualsiasi clip selezionata, anche di type ignoto
+//     (la rimozione non richiede schema, e duplicare un type unknown è
+//     occasionalmente utile per ribattere clip legacy).
+function updateActionsState(state) {
   const seg = state.segments[state.currentId];
   const tr = seg && seg.tracks && seg.tracks[state.selectedTrackIndex];
-  const enabled = !!(tr && TRACK_SCHEMAS[tr.type]);
-  const tab = state.panel.querySelector('.view-tab.inspector');
-  if (tab) tab.disabled = !enabled;
+  const trackSelected = !!tr;
+  const inspectorOk   = trackSelected && !!TRACK_SCHEMAS[tr.type];
 
-  const info = state.panel.querySelector('.toolbar-info');
-  if (info && !enabled) info.textContent = '';
+  const tab = state.panel.querySelector('.view-tab.inspector');
+  if (tab) tab.disabled = !inspectorOk;
+  const dup = state.panel.querySelector('.dup-track');
+  if (dup) dup.disabled = !trackSelected;
+  const rm = state.panel.querySelector('.rm-track');
+  if (rm) rm.disabled = !trackSelected;
 }
 
 function selectTrack(state, index) {
@@ -472,14 +513,8 @@ function selectTrack(state, index) {
   if (!tr) return;
 
   state.selectedTrackIndex = index;
-  updateInspectorTabState(state);
-
-  // Aggiorna toolbar info.
-  const info = state.panel.querySelector('.toolbar-info');
-  const schema = TRACK_SCHEMAS[tr.type];
-  info.textContent = schema
-    ? `${schema.label} @ ${tr.at || 0}ms`
-    : `Unknown type '${tr.type}' — JSON only`;
+  updateActionsState(state);
+  updateToolbarInfo(state);
 
   // Highlight nella timeline (re-render rapido per applicare classe .selected).
   state.panel.querySelectorAll('.clip').forEach(el => {
@@ -488,6 +523,20 @@ function selectTrack(state, index) {
 
   // Switch view (ricade su JSON se schema sconosciuto).
   setView(state, 'inspector');
+}
+
+// Toolbar info riflette la track selezionata. Stringa vuota se nessuna
+// selezione o se l'indice è scaduto (es. dopo remove o edit JSON).
+function updateToolbarInfo(state) {
+  const info = state.panel.querySelector('.toolbar-info');
+  if (!info) return;
+  const seg = state.segments[state.currentId];
+  const tr = seg && seg.tracks && seg.tracks[state.selectedTrackIndex];
+  if (!tr) { info.textContent = ''; return; }
+  const schema = TRACK_SCHEMAS[tr.type];
+  info.textContent = schema
+    ? `${schema.label} @ ${tr.at || 0}ms`
+    : `Unknown type '${tr.type}' — JSON only`;
 }
 
 // ---------------------------------------------------------------------------
@@ -607,7 +656,7 @@ function renderFieldNumber(state, field, track, host) {
     const v = input.value === '' ? null : parseFloat(input.value);
     if (v == null || Number.isNaN(v)) delete track[field.key];
     else track[field.key] = v;
-    applyChange(state, field.key === 'at');
+    applyChange(state);
   });
   host.appendChild(input);
 }
@@ -931,9 +980,10 @@ function rerenderInspector(state) {
   root.scrollTop = scroll;
 }
 
-// Sync dopo un edit dal form: rigenera CM (suppresso) + timeline. Se `at` è
-// cambiato, aggiorna la toolbar info. Marca dirty.
-function applyChange(state, atMaybeChanged = false) {
+// Sync dopo un edit dal form (o add/dup/remove): rigenera CM (suppresso) +
+// timeline. Aggiorna sempre la toolbar info perché add/dup/remove possono
+// aver cambiato la selezione, e l'extra cost è trascurabile. Marca dirty.
+function applyChange(state) {
   const seg = state.segments[state.currentId];
 
   // 1. CM <- objeto (suppress per non triggerare il debounce inutile).
@@ -944,16 +994,99 @@ function applyChange(state, atMaybeChanged = false) {
   // 2. Timeline (mantiene la selezione via state.selectedTrackIndex).
   renderTimeline(state, seg);
 
-  // 3. Toolbar info (se è cambiato `at` o `type`).
-  if (atMaybeChanged) {
-    const tr = seg.tracks[state.selectedTrackIndex];
-    const schema = tr && TRACK_SCHEMAS[tr.type];
-    const info = state.panel.querySelector('.toolbar-info');
-    if (schema && tr) info.textContent = `${schema.label} @ ${tr.at || 0}ms`;
-  }
+  // 3. Toolbar info (riflette la track corrente, '' se nessuna).
+  updateToolbarInfo(state);
 
   // 4. Dirty marker.
   setDirty(state, true);
+}
+
+// ---------------------------------------------------------------------------
+// Add / duplicate / remove track (Fase 5)
+
+// Costruisce una track default-popolata dato un type. Pesca i primi
+// anchor/clip/prop disponibili dal director per evitare valori "vuoti" che
+// crasherebbero al replay. Lo schema dei campi è in TRACK_SCHEMAS — il
+// default qui ne è il companion runtime.
+function defaultTrackFor(type, state) {
+  const anchors = Object.keys(state.director.anchors || {}).sort();
+  const firstAnchor = anchors[0] || '';
+  const clips = state.director.character ? Object.keys(state.director.character.clips || {}) : [];
+  const firstClip = clips.includes('idle') ? 'idle' : (clips[0] || 'idle');
+  const props = Object.keys(state.director.props || {}).sort();
+  const firstProp = props[0] || '';
+
+  switch (type) {
+    case 'characterMove':
+      return {
+        at: 0, type,
+        to: firstAnchor ? { anchor: firstAnchor } : [0, 0, 0],
+        duration: 1000, ease: 'linear',
+      };
+    case 'characterAnim':
+      return { at: 0, type, clip: firstClip, loop: true };
+    case 'cameraMove':
+      // Pos/lookAt literal: l'utente li sintonizza subito a vista.
+      return {
+        at: 0, type,
+        pos:    [0, 2, 5],
+        lookAt: [0, 1, 0],
+        duration: 1000, ease: 'inOut',
+      };
+    case 'cameraFollow':
+      return { at: 0, type, transitionMs: 500 };
+    case 'propTween':
+      return {
+        at: 0, type,
+        prop: firstProp,
+        to: { posY: 0 },
+        duration: 1000, ease: 'smoothstep',
+      };
+    default:
+      return { at: 0, type };
+  }
+}
+
+function addTrack(state, type) {
+  if (!state.currentId) return;
+  if (!TRACK_SCHEMAS[type]) return;
+  const seg = state.segments[state.currentId];
+  if (!seg) return;
+  if (!Array.isArray(seg.tracks)) seg.tracks = [];
+
+  const tr = defaultTrackFor(type, state);
+  seg.tracks.push(tr);
+  state.selectedTrackIndex = seg.tracks.length - 1;
+  applyChange(state);
+  updateActionsState(state);
+  setView(state, 'inspector');
+}
+
+function duplicateTrack(state) {
+  const seg = state.segments[state.currentId];
+  const i = state.selectedTrackIndex;
+  if (!seg || !Array.isArray(seg.tracks) || !seg.tracks[i]) return;
+
+  // Le track sono pure-data, deep clone via JSON è esatto e zero deps.
+  const clone = JSON.parse(JSON.stringify(seg.tracks[i]));
+  seg.tracks.push(clone);
+  state.selectedTrackIndex = seg.tracks.length - 1;
+  applyChange(state);
+  updateActionsState(state);
+  if (state.view === 'inspector') renderInspector(state);
+}
+
+function removeTrack(state) {
+  const seg = state.segments[state.currentId];
+  const i = state.selectedTrackIndex;
+  if (!seg || !Array.isArray(seg.tracks) || !seg.tracks[i]) return;
+
+  seg.tracks.splice(i, 1);
+  state.selectedTrackIndex = null;
+  applyChange(state);
+  updateActionsState(state);
+  // L'inspector non ha più una clip su cui puntare → torna alla vista JSON.
+  setView(state, 'json');
 }
 
 // ---------------------------------------------------------------------------
