@@ -34,8 +34,11 @@
 //     se la clip selezionata sparisce per un edit del JSON.
 //
 // Funzionalità Fase 5 (add/remove track):
-//   - Toolbar estesa con "+ Add track" (select coi 5 type schema'd),
-//     "Duplicate" e "Remove" (entrambi gated dalla selezione).
+//   - "+ Add track" come select dentro alla `.timeline-actions` (footer
+//     della timeline) — è un'azione sul segment, sta vicino alle track.
+//   - "⎘ duplica" / "× rimuovi" dentro all'`.inspector-header` insieme al
+//     breadcrumb della clip selezionata. Sono azioni contestuali alla clip
+//     in editing, e l'inspector è il posto dove la clip è "aperta".
 //   - Add: default values prodotti da defaultTrackFor() sfruttando gli
 //     anchor/clip/prop disponibili nel director. Append a seg.tracks, la
 //     nuova clip diventa la selezione, view → inspector.
@@ -43,6 +46,8 @@
 //     stesso `at`, append a fine lista, la copia diventa selezione.
 //   - Remove: splice + deselezione + view → JSON. Niente confirm: il dirty
 //     marker e Ctrl+Z (Fase 9) sono la rete.
+//   - Toolbar: ridotta a sole tab JSON / Inspector. Niente più breadcrumb
+//     o action buttons: erano confusi e affamavano lo spazio orizzontale.
 //
 // Salvataggio: fa PUT a `/save/<segmentsPath>`. Il dev_server.py scrive il
 // file relativo alla CWD da cui è stato lanciato (tipicamente `3d/`).
@@ -102,19 +107,25 @@ function buildPanel(state, CodeMirror) {
           <div class="timeline-ruler"></div>
           <div class="timeline-lanes"></div>
           <div class="timeline-tooltip" hidden></div>
+          <div class="timeline-actions">
+            <select class="add-track" title="Aggiungi track al segment">
+              <option value="">+ Add track</option>
+            </select>
+          </div>
         </div>
         <div class="edit-toolbar">
           <button class="view-tab json selected" data-view="json">JSON</button>
           <button class="view-tab inspector" data-view="inspector" disabled>Inspector</button>
-          <span class="toolbar-info"></span>
-          <select class="add-track" title="Aggiungi track al segment">
-            <option value="">+ Add track</option>
-          </select>
-          <button class="dup-track" title="Duplica clip selezionata" disabled>⎘</button>
-          <button class="rm-track"  title="Rimuovi clip selezionata"  disabled>×</button>
         </div>
         <div class="cm-host"></div>
-        <div class="inspector" hidden></div>
+        <div class="inspector" hidden>
+          <div class="inspector-header">
+            <span class="inspector-title"></span>
+            <button class="dup-track" disabled title="Duplica clip selezionata">⎘ duplica</button>
+            <button class="rm-track"  disabled title="Rimuovi clip selezionata">× rimuovi</button>
+          </div>
+          <div class="inspector-fields"></div>
+        </div>
         <div class="seg-error"></div>
       </main>
     </div>
@@ -514,7 +525,7 @@ function selectTrack(state, index) {
 
   state.selectedTrackIndex = index;
   updateActionsState(state);
-  updateToolbarInfo(state);
+  updateInspectorTitle(state);
 
   // Highlight nella timeline (re-render rapido per applicare classe .selected).
   state.panel.querySelectorAll('.clip').forEach(el => {
@@ -525,16 +536,17 @@ function selectTrack(state, index) {
   setView(state, 'inspector');
 }
 
-// Toolbar info riflette la track selezionata. Stringa vuota se nessuna
-// selezione o se l'indice è scaduto (es. dopo remove o edit JSON).
-function updateToolbarInfo(state) {
-  const info = state.panel.querySelector('.toolbar-info');
-  if (!info) return;
+// Header dell'inspector con il breadcrumb della clip ('Character move @ 0ms').
+// Stringa vuota se nessuna selezione (l'header è comunque hidden con
+// l'inspector quando in vista JSON).
+function updateInspectorTitle(state) {
+  const title = state.panel.querySelector('.inspector-title');
+  if (!title) return;
   const seg = state.segments[state.currentId];
   const tr = seg && seg.tracks && seg.tracks[state.selectedTrackIndex];
-  if (!tr) { info.textContent = ''; return; }
+  if (!tr) { title.textContent = ''; return; }
   const schema = TRACK_SCHEMAS[tr.type];
-  info.textContent = schema
+  title.textContent = schema
     ? `${schema.label} @ ${tr.at || 0}ms`
     : `Unknown type '${tr.type}' — JSON only`;
 }
@@ -600,16 +612,18 @@ const PROP_TO_KEYS = ['posX', 'posY', 'posZ', 'rotX', 'rotY', 'rotZ', 'scale'];
 // Renderizza il form della clip selezionata. Source-of-truth = oggetto JS in
 // state.segments[currentId].tracks[selectedTrackIndex]; ogni field onChange
 // muta direttamente la track e chiama applyChange() per propagare a CM/timeline.
+// Popola SOLO .inspector-fields: l'.inspector-header (title + dup/rm) è
+// statico, viene aggiornato separatamente da updateInspectorTitle.
 function renderInspector(state) {
-  const root = state.panel.querySelector('.inspector');
-  root.innerHTML = '';
+  const fields = state.panel.querySelector('.inspector-fields');
+  fields.innerHTML = '';
 
   const seg = state.segments[state.currentId];
   const track = seg && seg.tracks && seg.tracks[state.selectedTrackIndex];
   if (!track) return;
   const schema = TRACK_SCHEMAS[track.type];
   if (!schema) {
-    root.textContent = `Type '${track.type}' senza schema. Usa la vista JSON.`;
+    fields.textContent = `Type '${track.type}' senza schema. Usa la vista JSON.`;
     return;
   }
 
@@ -619,7 +633,7 @@ function renderInspector(state) {
     row.innerHTML = `<label>${field.label}</label><div class="control"></div>`;
     const ctl = row.querySelector('.control');
     renderField(state, field, track, ctl);
-    root.appendChild(row);
+    fields.appendChild(row);
   }
 }
 
@@ -995,7 +1009,7 @@ function applyChange(state) {
   renderTimeline(state, seg);
 
   // 3. Toolbar info (riflette la track corrente, '' se nessuna).
-  updateToolbarInfo(state);
+  updateInspectorTitle(state);
 
   // 4. Dirty marker.
   setDirty(state, true);
