@@ -15,7 +15,7 @@
 //   - le transizioni anim "a fine clip" (es. walk → idle) stanno SOLO
 //     nell'endState, non come track separata, per evitare retrigger di
 //     Character.play sulla stessa clip
-//   - skip via barra spaziatrice (handler in engine-demo.html) — le domande
+//   - skip via barra spaziatrice (handler in engine/bootstrap.js) — le domande
 //     non sono segment, quindi non vengono mai scavalcate
 //
 // Riferimenti pure-data risolti dal SegmentPlayer:

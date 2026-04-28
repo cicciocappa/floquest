@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>FloQuest 3D — Editor</title>
+<style>
+  html, body { margin: 0; padding: 0; width: 100%;
+               background: #1a1a1a; font-family: -apple-system, system-ui, sans-serif; color: #eee; }
+  /* canvas-host occupa il viewport intero; il pannello editor scorre sotto. */
+  #canvas-host { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+  #info { position: absolute; top: 12px; left: 12px; font-size: 12px; color: #888;
+          background: rgba(0,0,0,0.5); padding: 6px 10px; border-radius: 6px; z-index: 5; }
+  #cam-debug { position: absolute; right: 12px; bottom: 12px; width: 260px;
+               background: rgba(0,0,0,0.65); padding: 0 12px 10px; border-radius: 6px;
+               font-size: 11px; z-index: 10; user-select: none; }
+  #cam-debug.hidden { display: none; }
+  #cam-debug header { display: flex; align-items: center; justify-content: space-between;
+                      margin: 0 -12px; padding: 8px 12px; cursor: move;
+                      border-bottom: 1px solid rgba(255,255,255,0.08); }
+  #cam-debug header h4 { margin: 0; font-size: 11px; color: #aaa; font-weight: 600;
+                         text-transform: uppercase; letter-spacing: 0.5px; }
+  #cam-debug header .close { background: transparent; border: 1px solid #555;
+                             color: #aaa; width: 20px; height: 20px; border-radius: 3px;
+                             cursor: pointer; font-size: 13px; line-height: 0;
+                             padding: 0; margin: 0; }
+  #cam-debug header .close:hover { background: #444; color: #fff; }
+  #cam-debug .body { padding-top: 8px; }
+  #cam-debug .row { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
+  #cam-debug .row label { flex: 0 0 70px; color: #ccc; }
+  #cam-debug .row input[type=range] { flex: 1; min-width: 0; }
+  #cam-debug .row .val { flex: 0 0 46px; text-align: right; color: #9eea7a;
+                         font-family: ui-monospace, monospace; }
+  #cam-debug .row input[type=color] { flex: 1; height: 22px; padding: 0; border: none;
+                                       background: transparent; cursor: pointer; }
+  #cam-debug h4.sub { margin: 10px 0 4px; font-size: 11px; color: #aaa;
+                      font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  #cam-debug button.reset { margin-top: 6px; width: 100%; background: #333; color: #eee;
+                            border: 1px solid #555; padding: 4px; border-radius: 4px;
+                            font-size: 11px; cursor: pointer; }
+  #cam-debug button.reset:hover { background: #444; }
+  /* Bottone "riapri pannello camera": visibile solo quando il pannello è chiuso. */
+  #cam-debug-toggle { position: absolute; right: 12px; bottom: 12px; z-index: 10;
+                      display: none; background: rgba(0,0,0,0.65); color: #ddd;
+                      border: 1px solid #555; padding: 6px 10px; border-radius: 6px;
+                      font-size: 11px; cursor: pointer; user-select: none; }
+  #cam-debug-toggle:hover { background: rgba(20,20,20,0.85); color: #fff; }
+  #cam-debug.hidden ~ #cam-debug-toggle { display: block; }
+</style>
+</head>
+<body>
+<div id="canvas-host">
+  <div id="info">FloQuest 3D · Editor · <b>spazio</b> = skip animazione</div>
+  <div id="cam-debug">
+    <header>
+      <h4>Camera (debug)</h4>
+      <button class="close" id="cd-close" title="Nascondi (C)">×</button>
+    </header>
+    <div class="body">
+      <div class="row"><label>FOV °</label><input id="cd-fov" type="range" min="15" max="80" step="0.5"><span class="val" id="cd-fov-v"></span></div>
+      <div class="row"><label>Cam Y</label><input id="cd-camy" type="range" min="0" max="8" step="0.05"><span class="val" id="cd-camy-v"></span></div>
+      <div class="row"><label>Cam Z</label><input id="cd-camz" type="range" min="2" max="25" step="0.1"><span class="val" id="cd-camz-v"></span></div>
+      <div class="row"><label>Tilt °</label><input id="cd-tilt" type="range" min="-30" max="60" step="0.5"><span class="val" id="cd-tilt-v"></span></div>
+      <h4 class="sub">Look</h4>
+      <div class="row"><label>Ambient</label><input id="cd-ambient" type="range" min="0" max="1" step="0.01"><span class="val" id="cd-ambient-v"></span></div>
+      <div class="row"><label>Tint</label><input id="cd-tint" type="color"><span class="val" id="cd-tint-v"></span></div>
+      <button class="reset" id="cd-reset">Reset</button>
+    </div>
+  </div>
+  <button id="cam-debug-toggle" title="Mostra pannello camera (C)">Camera debug</button>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { createStage, CAMERA_DEFAULTS } from './engine/bootstrap.js';
+import { setupEditor }                  from './editor/SegmentEditor.js';
+
+try {
+  const { director, character, hatchPass, cameraConfig, applyProjection } = await createStage();
+
+  // Spawn baseline così la scena non è vuota mentre l'utente edita.
+  if (director.anchors.anchor_player_start) {
+    character.spawnAt(director.anchors.anchor_player_start);
+  }
+
+  director.start();
+  await setupEditor({
+    director,
+    segmentsPath: 'levels/level1.segments.json',
+  });
+
+  bindCameraDebug({ hatchPass, cameraConfig, applyProjection });
+  bindCameraPanelChrome();
+} catch (e) {
+  document.getElementById('info').textContent = 'Errore: ' + e.message;
+  throw e;
+}
+
+function bindCameraDebug({ hatchPass, cameraConfig, applyProjection }) {
+  const LOOK_DEFAULTS = { ambient: 0.15, tint: '#ffffff' };
+  const u = () => hatchPass.material.uniforms;
+  const hexToColor = h => new THREE.Color().setHex(parseInt(h.slice(1), 16));
+  const colorToHex = c => '#' + c.getHexString();
+
+  const fields = [
+    { id: 'fov',     get: () => cameraConfig.fov,     set: v => { cameraConfig.fov = v; applyProjection(); }, fmt: v => v.toFixed(1) + '°' },
+    { id: 'camy',    get: () => cameraConfig.camY,    set: v => { cameraConfig.camY = v; },                   fmt: v => v.toFixed(2) },
+    { id: 'camz',    get: () => cameraConfig.camZ,    set: v => { cameraConfig.camZ = v; },                   fmt: v => v.toFixed(2) },
+    { id: 'tilt',    get: () => cameraConfig.tiltDeg, set: v => { cameraConfig.tiltDeg = v; },                fmt: v => v.toFixed(1) + '°' },
+    { id: 'ambient', get: () => u().uAmbient.value,   set: v => { u().uAmbient.value = v; },                  fmt: v => v.toFixed(2) },
+  ];
+  for (const f of fields) {
+    const input = document.getElementById('cd-' + f.id);
+    const label = document.getElementById('cd-' + f.id + '-v');
+    const refresh = () => { input.value = f.get(); label.textContent = f.fmt(f.get()); };
+    input.addEventListener('input', () => { f.set(parseFloat(input.value)); label.textContent = f.fmt(f.get()); });
+    f.refresh = refresh;
+    refresh();
+  }
+
+  // Color picker per uSceneTint (gestito separatamente: input type=color).
+  const tintInput = document.getElementById('cd-tint');
+  const tintLabel = document.getElementById('cd-tint-v');
+  const refreshTint = () => {
+    const hex = colorToHex(u().uSceneTint.value);
+    tintInput.value = hex;
+    tintLabel.textContent = hex;
+  };
+  tintInput.addEventListener('input', () => {
+    u().uSceneTint.value.copy(hexToColor(tintInput.value));
+    tintLabel.textContent = tintInput.value;
+  });
+  refreshTint();
+
+  document.getElementById('cd-reset').addEventListener('click', () => {
+    Object.assign(cameraConfig, CAMERA_DEFAULTS);
+    u().uAmbient.value = LOOK_DEFAULTS.ambient;
+    u().uSceneTint.value.copy(hexToColor(LOOK_DEFAULTS.tint));
+    applyProjection();
+    fields.forEach(f => f.refresh());
+    refreshTint();
+  });
+}
+
+// Drag dall'header, close (×), riapri (bottone + tasto C). Il pannello è
+// figlio di #canvas-host, quindi le coordinate sono in left/top relative al
+// canvas-host (matching l'iniziale right:12; bottom:12).
+function bindCameraPanelChrome() {
+  const panel  = document.getElementById('cam-debug');
+  const header = panel.querySelector('header');
+  const close  = panel.querySelector('.close');
+  const toggle = document.getElementById('cam-debug-toggle');
+
+  // Drag (mouse only — tablet/touch lo aggiungiamo se serve).
+  let dragging = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+  header.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.close')) return; // il bottone × non avvia drag
+    const rect = panel.getBoundingClientRect();
+    const hostRect = panel.parentElement.getBoundingClientRect();
+    // Switch da right/bottom a left/top così il drag aggiorna un solo asse.
+    panel.style.left   = (rect.left - hostRect.left) + 'px';
+    panel.style.top    = (rect.top  - hostRect.top)  + 'px';
+    panel.style.right  = 'auto';
+    panel.style.bottom = 'auto';
+    dragging = true;
+    startX = e.clientX; startY = e.clientY;
+    startLeft = rect.left - hostRect.left;
+    startTop  = rect.top  - hostRect.top;
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const hostRect = panel.parentElement.getBoundingClientRect();
+    const maxLeft = hostRect.width  - panel.offsetWidth;
+    const maxTop  = hostRect.height - panel.offsetHeight;
+    const nx = Math.max(0, Math.min(maxLeft, startLeft + (e.clientX - startX)));
+    const ny = Math.max(0, Math.min(maxTop,  startTop  + (e.clientY - startY)));
+    panel.style.left = nx + 'px';
+    panel.style.top  = ny + 'px';
+  });
+  window.addEventListener('mouseup', () => { dragging = false; });
+
+  const setHidden = (h) => panel.classList.toggle('hidden', h);
+  close.addEventListener('click',  () => setHidden(true));
+  toggle.addEventListener('click', () => setHidden(false));
+  window.addEventListener('keydown', (e) => {
+    // Skip se l'utente sta digitando in un input/textarea o in CodeMirror.
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    if (t && t.closest && t.closest('.CodeMirror')) return;
+    if (e.key === 'c' || e.key === 'C') {
+      e.preventDefault();
+      setHidden(!panel.classList.contains('hidden'));
+    }
+  });
+}
+</script>
+</body>
+</html>

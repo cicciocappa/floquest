@@ -1,9 +1,8 @@
 // Editor MVP per i segment del livello caricato.
 //
-// Attivato passando `?editor=1` nell'URL di engine-demo.html. In editor mode
-// il livello non viene auto-eseguito: il personaggio viene solo spawnato a
-// `anchor_player_start` (per dare un visual baseline) e l'utente decide cosa
-// testare via il pannello.
+// Caricato da editor.html. In editor mode il livello non viene auto-eseguito:
+// il personaggio viene solo spawnato a `anchor_player_start` (per dare un
+// visual baseline) e l'utente decide cosa testare via il pannello.
 //
 // Funzionalità Fase 1:
 //   - Carica i segment dal JSON specificato (segmentsPath)
@@ -115,7 +114,7 @@ function buildPanel(state, CodeMirror) {
         </div>
         <div class="edit-toolbar">
           <button class="view-tab json selected" data-view="json">JSON</button>
-          <button class="view-tab inspector" data-view="inspector" disabled>Inspector</button>
+          <button class="view-tab inspector" data-view="inspector">Inspector</button>
         </div>
         <div class="cm-host"></div>
         <div class="inspector" hidden>
@@ -210,11 +209,18 @@ function buildPanel(state, CodeMirror) {
   panel.querySelector('.save').addEventListener('click', () => saveCurrent(state));
   panel.querySelector('.close').addEventListener('click', () => panel.classList.toggle('collapsed'));
 
-  // Tab JSON / Inspector
+  // Tab JSON / Inspector. Inspector è sempre cliccabile: se non c'è una clip
+  // selezionata, auto-selezioniamo la prima track con schema noto del segment
+  // così l'utente vede subito un form invece di un tab inerte.
   panel.querySelectorAll('.view-tab').forEach(tab => {
     tab.addEventListener('click', () => {
-      if (tab.disabled) return;
-      setView(state, tab.dataset.view);
+      const view = tab.dataset.view;
+      if (view === 'inspector' && state.selectedTrackIndex == null) {
+        const seg = state.segments[state.currentId];
+        const idx = (seg && seg.tracks || []).findIndex(t => TRACK_SCHEMAS[t.type]);
+        if (idx >= 0) { selectTrack(state, idx); return; }
+      }
+      setView(state, view);
     });
   });
 
@@ -474,16 +480,15 @@ function bindTooltip(state, el, track) {
 // Vista JSON / Inspector toggle e selezione clip (Fase 3)
 
 function setView(state, view) {
-  // Se Inspector è richiesto ma non c'è una clip valida, fallback a JSON.
-  if (view === 'inspector') {
-    const seg = state.segments[state.currentId];
-    const tr = seg && seg.tracks && seg.tracks[state.selectedTrackIndex];
-    if (!tr || !TRACK_SCHEMAS[tr.type]) view = 'json';
-  }
+  // L'inspector resta visualizzabile anche senza selezione: renderInspector
+  // mostra un hint "click a clip" invece di lasciare il pannello vuoto.
   state.view = view;
 
   const cmHost = state.panel.querySelector('.cm-host');
-  const inspector = state.panel.querySelector('.inspector');
+  // `div.inspector`, non `.inspector`: la classe è condivisa con il bottone
+  // del tab (<button class="view-tab inspector">), e querySelector
+  // ritornerebbe quello, lasciando il form sempre hidden.
+  const inspector = state.panel.querySelector('div.inspector');
   cmHost.hidden = view !== 'json';
   inspector.hidden = view !== 'inspector';
 
@@ -500,7 +505,8 @@ function setView(state, view) {
 }
 
 // Stato dei bottoni di azione gated dalla selezione.
-//   - Inspector tab: solo se la clip ha uno schema (può rendere il form).
+//   - Inspector tab: sempre cliccabile (auto-seleziona la prima clip con
+//     schema noto al click se nulla è selezionato).
 //   - Duplicate/Remove: qualsiasi clip selezionata, anche di type ignoto
 //     (la rimozione non richiede schema, e duplicare un type unknown è
 //     occasionalmente utile per ribattere clip legacy).
@@ -508,10 +514,7 @@ function updateActionsState(state) {
   const seg = state.segments[state.currentId];
   const tr = seg && seg.tracks && seg.tracks[state.selectedTrackIndex];
   const trackSelected = !!tr;
-  const inspectorOk   = trackSelected && !!TRACK_SCHEMAS[tr.type];
 
-  const tab = state.panel.querySelector('.view-tab.inspector');
-  if (tab) tab.disabled = !inspectorOk;
   const dup = state.panel.querySelector('.dup-track');
   if (dup) dup.disabled = !trackSelected;
   const rm = state.panel.querySelector('.rm-track');
@@ -620,9 +623,18 @@ function renderInspector(state) {
 
   const seg = state.segments[state.currentId];
   const track = seg && seg.tracks && seg.tracks[state.selectedTrackIndex];
-  if (!track) return;
+  if (!track) {
+    const hasTracks = seg && Array.isArray(seg.tracks) && seg.tracks.length > 0;
+    fields.className = 'inspector-fields hint';
+    fields.textContent = hasTracks
+      ? 'Clicca una clip della timeline per modificarla.'
+      : 'Questo segment non ha track. Usa "+ Add track" per aggiungerne una.';
+    return;
+  }
+  fields.className = 'inspector-fields';
   const schema = TRACK_SCHEMAS[track.type];
   if (!schema) {
+    fields.classList.add('hint');
     fields.textContent = `Type '${track.type}' senza schema. Usa la vista JSON.`;
     return;
   }
@@ -988,7 +1000,7 @@ function makeAddPicker(state, field, track, unused, host) {
 
 // Re-render dell'inspector mantenendo selezione + scroll position.
 function rerenderInspector(state) {
-  const root = state.panel.querySelector('.inspector');
+  const root = state.panel.querySelector('div.inspector');
   const scroll = root.scrollTop;
   renderInspector(state);
   root.scrollTop = scroll;

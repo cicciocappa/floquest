@@ -63,7 +63,7 @@ L'illuminazione finale è gestita dal post-pass (`HatchPass`) usando una `Direct
 
 ## Path di destinazione
 
-Convenzione attuale: `3d/assets/level<N>.glb`. Da agganciare in `engine-demo.html` sostituendo la sezione "set procedurale" con:
+Convenzione attuale: `3d/assets/level<N>.glb`. Caricato in `engine/bootstrap.js` con:
 
 ```js
 await director.loadSet('assets/level1.glb', {
