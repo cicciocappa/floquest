@@ -80,6 +80,37 @@ export class Character {
     });
   }
 
+  // Scrub a una clip a un tempo specifico (no fade, no Promise). Usato dal
+  // SegmentPlayer.evaluateAt durante il timeline scrubbing dell'editor: serve
+  // posizionare il mixer a un tempo arbitrario su una clip data senza
+  // attraversare la macchina dei crossfade. `time` è in secondi (coerente
+  // con clip.duration).
+  scrubTo(name, time, { loop = true } = {}) {
+    const clip = this.clips[name.toLowerCase()];
+    if (!clip) return;
+    const dur = clip.duration;
+    // Doppio mod per gestire valori negativi correttamente in JS.
+    const targetTime = loop
+      ? ((time % dur) + dur) % dur
+      : Math.max(0, Math.min(time, dur));
+
+    if (this.currentAction && this.currentAction.getClip() === clip) {
+      this.currentAction.time = targetTime;
+    } else {
+      // Switch fast: stop dell'attuale, play della nuova senza fadeIn.
+      if (this.currentAction) this.currentAction.stop();
+      const next = this.mixer.clipAction(clip);
+      next.reset();
+      next.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce, loop ? Infinity : 1);
+      next.clampWhenFinished = !loop;
+      next.time = targetTime;
+      next.play();
+      this.currentAction = next;
+    }
+    // mixer.update(0) applica il `time` corrente alle bones senza avanzare.
+    this.mixer.update(0);
+  }
+
   // Sposta il personaggio fino a `target`, opzionalmente riproducendo `anim`
   // durante il movimento (di default 'walk').
   // target può essere Vector3, Object3D, o {x,y,z}.

@@ -32,6 +32,16 @@
 //   - Tab Inspector disabilitato finché non clicchi una clip; ridiventa disabled
 //     se la clip selezionata sparisce per un edit del JSON.
 //
+// Funzionalità Fase 4 (direct manipulation timeline):
+//   - Drag sul corpo della clip → cambia `at` (duration invariata).
+//   - Drag sul bordo destro → cambia `duration` (left edge fisso).
+//   - Drag sul bordo sinistro → cambia `at` + `duration` (right edge fisso).
+//   - Markers (duration=0) supportano solo move.
+//   - Click senza movimento → comportamento legacy (selectTrack).
+//   - Snap 10ms di default, free (1ms) con Alt.
+//   - totalMs snapshottato a inizio drag per non far rescalare la timeline
+//     sotto al cursore. Rebuild completo (timeline+CM+dirty) solo al drop.
+//
 // Funzionalità Fase 5 (add/remove track):
 //   - "+ Add track" come select dentro alla `.timeline-actions` (footer
 //     della timeline) — è un'azione sul segment, sta vicino alle track.
@@ -170,25 +180,13 @@ function buildPanel(state, CodeMirror) {
     // sorgente, nessun re-parse né re-render serve.
     if (state._suppressCMChange) return;
     setDirty(state, true);
-    // Re-render timeline con debounce: se il JSON è valido aggiorno, altrimenti
-    // lascio l'ultima versione visibile (l'errore di parse è già visualizzato
-    // quando si tenta Play/Save — qui silenzioso per non spammare).
+    // Re-render timeline con debounce: se il JSON è valido adotta, altrimenti
+    // lascia l'ultima versione visibile (silently — l'errore appare solo a
+    // Play/Save, qui non spammiamo).
     clearTimeout(state._timelineTimer);
     state._timelineTimer = setTimeout(() => {
-      try {
-        const obj = JSON.parse(state.cm.getValue());
-        // Adotta come source-of-truth: form e timeline ne dipendono.
-        state.segments[state.currentId] = obj;
-        renderTimeline(state, obj);
-        // Se inspector aperto, re-popola dal nuovo oggetto. Se l'indice non
-        // è più valido (es. utente ha tolto un track), torna alla vista JSON.
-        updateActionsState(state);
-        if (state.view === 'inspector') {
-          const tr = obj.tracks && obj.tracks[state.selectedTrackIndex];
-          if (tr && TRACK_SCHEMAS[tr.type]) renderInspector(state);
-          else setView(state, 'json');
-        }
-      } catch (_) { /* keep last render */ }
+      state._timelineTimer = null;
+      syncStateFromCM(state, { quiet: true });
     }, 200);
   });
 
@@ -290,23 +288,58 @@ function setError(state, text) {
   state.panel.querySelector('.seg-error').textContent = text || '';
 }
 
-function parseCurrent(state) {
+// Re-parse del CM e adopt come source-of-truth: rimpiazza state.segments[id]
+// e rinrendera viste dipendenti (timeline + inspector). Chiamata sia dal
+// debounce CM-edit che da play/save per flushare un debounce in attesa.
+//
+// IMPORTANTE: questa funzione **rimpiazza** l'oggetto in state.segments[id].
+// Eventuali closures dell'inspector che catturano `track` da un render
+// precedente diventano stale dopo questa chiamata — per questo rinrenderiamo
+// l'inspector se aperto, così le nuove closures puntano al nuovo oggetto.
+//
+// `quiet: true` per il debounce (utente sta digitando, JSON spesso invalido
+// mid-edit), default false per Play/Save (errore visibile per intenzionalità).
+function syncStateFromCM(state, { quiet = false } = {}) {
   try {
     const obj = JSON.parse(state.cm.getValue());
     setError(state, '');
+    state.segments[state.currentId] = obj;
+    renderTimeline(state, obj);
+    updateActionsState(state);
+    if (state.view === 'inspector') {
+      const tr = obj.tracks && obj.tracks[state.selectedTrackIndex];
+      if (tr && TRACK_SCHEMAS[tr.type]) renderInspector(state);
+      else setView(state, 'json');
+    }
     return obj;
   } catch (e) {
-    setError(state, `JSON invalido: ${e.message}`);
+    if (!quiet) setError(state, `JSON invalido: ${e.message}`);
     return null;
   }
 }
 
-function playCurrent(state) {
-  const seg = parseCurrent(state);
-  if (!seg) return;
+// Flush un eventuale CM-debounce in attesa: se l'utente ha digitato in CM ma
+// il timer dei 200ms non è ancora scaduto, state.segments è disallineato
+// rispetto al CM. Adottiamo subito. Ritorna false se il JSON è invalido
+// (cancella l'azione in corso).
+function flushPendingCMDebounce(state) {
+  if (!state._timelineTimer) return true;
+  clearTimeout(state._timelineTimer);
+  state._timelineTimer = null;
+  return syncStateFromCM(state) !== null;
+}
 
-  // Aggiorna in-memory così la prossima play e il save rispecchiano l'edit.
-  state.segments[state.currentId] = seg;
+function playCurrent(state) {
+  // Flush prima di leggere state.segments — può non essere sincronizzato
+  // se l'utente ha digitato in CM <200ms fa. Fuori dal flush usiamo
+  // direttamente la live reference: niente re-parse del CM, niente reassign.
+  // Mantenere la reference è critico perché l'inspector ha closures che
+  // catturarono il `track` al renderInspector — rimpiazzare l'oggetto le
+  // rende stale (edit successivi del form vanno sull'oggetto orfano).
+  if (!flushPendingCMDebounce(state)) return;
+
+  const seg = state.segments[state.currentId];
+  if (!seg) return;
 
   // Reset dello stato del mondo per replay deterministico (porta non rimane
   // a -3 dopo il primo play di door_drop, ecc.) e camera in follow.
@@ -438,7 +471,7 @@ function renderTimeline(state, seg) {
       clip.dataset.trackIndex = index;
       clip.textContent = clipLabel(tr);
       bindTooltip(state, clip, tr);
-      clip.addEventListener('click', () => selectTrack(state, index));
+      bindClipDrag(state, clip, tr, index);
       track.appendChild(clip);
     }
 
@@ -461,10 +494,12 @@ function clipLabel(t) {
 function bindTooltip(state, el, track) {
   const tooltip = state.panel.querySelector('.timeline-tooltip');
   el.addEventListener('mouseenter', () => {
+    if (el._dragging) return;
     tooltip.textContent = JSON.stringify(track, null, 2);
     tooltip.hidden = false;
   });
   el.addEventListener('mousemove', (e) => {
+    if (el._dragging) return;
     // Coordinate relative al parent del tooltip (.timeline, position:relative).
     const host = tooltip.parentElement.getBoundingClientRect();
     const x = e.clientX - host.left + 10;
@@ -474,6 +509,142 @@ function bindTooltip(state, el, track) {
     tooltip.style.transform = 'translateY(-100%)';
   });
   el.addEventListener('mouseleave', () => { tooltip.hidden = true; });
+}
+
+// ---------------------------------------------------------------------------
+// Direct manipulation (Fase 4)
+
+// Zona sui bordi della clip riconosciuta come resize. 6px è abbastanza largo
+// da centrare con il mouse senza sforzo, abbastanza stretto da non rubare lo
+// spazio del move su clip di durata media (>30ms a tipica scala timeline).
+const EDGE_GRAB_PX = 6;
+
+function bindClipDrag(state, clip, track, index) {
+  // `isMarker` snapshottato al bind: durante un drag in corso il flag non
+  // cambia (il resize è disabilitato sui marker, quindi non c'è promozione
+  // marker→block durante il drag). Su drop la timeline rinrendera, e il
+  // nuovo clip element prende il flag corretto dai dati.
+  const isMarker = !(typeof track.duration === 'number' && track.duration > 0);
+
+  clip.style.cursor = 'grab';
+  if (!isMarker) {
+    // Hover cursor: ew-resize entro EDGE_GRAB_PX dai bordi, grab nel centro.
+    clip.addEventListener('mousemove', (e) => {
+      if (clip._dragging) return;
+      const rect = clip.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      clip.style.cursor = (x <= EDGE_GRAB_PX || x >= rect.width - EDGE_GRAB_PX)
+        ? 'ew-resize'
+        : 'grab';
+    });
+  }
+
+  clip.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Mode dipende da dove cade il click sulla clip.
+    let mode = 'move';
+    if (!isMarker) {
+      const rect = clip.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      if (x <= EDGE_GRAB_PX) mode = 'resize-left';
+      else if (x >= rect.width - EDGE_GRAB_PX) mode = 'resize-right';
+    }
+
+    // Snapshot di tutto ciò che serve per la conversione px↔ms. totalMs è
+    // congelato: se lasciassi auto-fittare durante il drag, allungare una
+    // clip farebbe rescalare la timeline sotto al cursore e la clip
+    // scivolerebbe via dal mouse.
+    const seg = state.segments[state.currentId];
+    const totalMs = computeTotalMs(seg);
+    const laneTrackEl = clip.parentElement; // .lane-track
+    const trackWidthPx = laneTrackEl.getBoundingClientRect().width;
+    const pxToMs = trackWidthPx > 0 ? totalMs / trackWidthPx : 1;
+
+    const startMouseX = e.clientX;
+    const startAt = track.at || 0;
+    const startDur = (typeof track.duration === 'number') ? track.duration : 0;
+
+    let dragged = false;
+    clip._dragging = true;
+
+    // Cursor globale + niente selezione testo durante il drag.
+    const prevBodyCursor = document.body.style.cursor;
+    document.body.style.cursor = (mode === 'move') ? 'grabbing' : 'ew-resize';
+    document.body.style.userSelect = 'none';
+
+    // Hide tooltip — durante il drag il mouse può rientrare sulla clip e
+    // farlo riaccendere via mouseenter (gated da `_dragging` in bindTooltip).
+    const tooltip = state.panel.querySelector('.timeline-tooltip');
+    if (tooltip) tooltip.hidden = true;
+
+    const onMove = (ev) => {
+      const dx = ev.clientX - startMouseX;
+      // Threshold 2px per non promuovere a drag un click "scaduto".
+      if (!dragged && Math.abs(dx) < 2) return;
+      dragged = true;
+
+      // Snap: 10ms default, 1ms (free) con Alt held.
+      const snap = ev.altKey ? 1 : 10;
+      const dms = Math.round((dx * pxToMs) / snap) * snap;
+
+      if (mode === 'move') {
+        const newAt = Math.max(0, startAt + dms);
+        track.at = newAt;
+        clip.style.left = `${(newAt / totalMs) * 100}%`;
+      } else if (mode === 'resize-right') {
+        const newDur = Math.max(0, startDur + dms);
+        track.duration = newDur;
+        clip.style.width = `${(newDur / totalMs) * 100}%`;
+      } else { // 'resize-left': bordo destro fisso → newAt + newDur = startAt + startDur
+        let newAt = Math.max(0, startAt + dms);
+        let newDur = startDur - (newAt - startAt);
+        if (newDur < 0) {
+          // Mouse oltre il bordo destro: pin alla collisione (durata 0).
+          newDur = 0;
+          newAt = startAt + startDur;
+        }
+        track.at = newAt;
+        track.duration = newDur;
+        clip.style.left  = `${(newAt  / totalMs) * 100}%`;
+        clip.style.width = `${(newDur / totalMs) * 100}%`;
+      }
+
+      // Live update inspector se aperto sulla stessa clip. CM viene NON
+      // aggiornato per move (setValue ad ogni mousemove flickera ed è caro);
+      // resta disallineato fino al drop, momento in cui applyChange lo sincra.
+      if (state.view === 'inspector' && state.selectedTrackIndex === index) {
+        renderInspector(state);
+        updateInspectorTitle(state);
+      }
+    };
+
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = prevBodyCursor;
+      document.body.style.userSelect = '';
+      clip._dragging = false;
+
+      if (dragged) {
+        // Drag concluso → eager-select (l'utente ha "preso" la clip).
+        // Non cambio view: drag in JSON resta in JSON, drag in inspector
+        // resta in inspector. applyChange rinrendera timeline + CM + dirty.
+        state.selectedTrackIndex = index;
+        applyChange(state);
+        updateActionsState(state);
+        if (state.view === 'inspector') renderInspector(state);
+      } else {
+        // Click puro (no movimento) → comportamento legacy.
+        selectTrack(state, index);
+      }
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -1118,10 +1289,8 @@ function removeTrack(state) {
 // ---------------------------------------------------------------------------
 
 async function saveCurrent(state) {
-  const seg = parseCurrent(state);
-  if (!seg) return;
-
-  state.segments[state.currentId] = seg;
+  // Stesso flush pattern di playCurrent: state è canonical, CM è una view.
+  if (!flushPendingCMDebounce(state)) return;
 
   try {
     const res = await fetch(`/save/${state.segmentsPath}`, {
